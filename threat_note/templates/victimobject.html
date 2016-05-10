@@ -206,7 +206,7 @@
                     </div>
                     {% endif %}
 
-                    {% if settingsvars['whoisinfo'] == "on" %}
+                    {% if settings['whoisinfo'] == "on" %}
                 {% if records['type'] == "IPv4" %}
                 <div class="row">
                   <div class="col-lg-12">
@@ -280,7 +280,7 @@
                     </div>
                         {% endif %} {% endif %}
 
-                        {% if settingsvars['vtinfo'] == "on" %}
+                        {% if settings['vtinfo'] == "on" %}
                 {% if records['type'] == "IPv4" %}
                 <div class="row">
                   <div class="col-lg-12">
@@ -338,7 +338,7 @@
                         {% endif %} {% endif %}
 
 
-                        {% if settingsvars['odnsinfo'] == "on" %}
+                        {% if settings['odnsinfo'] == "on" %}
                         {% if records['type'] == "IPv4" %}
                         <div class="row">
                   <div class="col-lg-12">
@@ -392,7 +392,7 @@
                     </div>
                         {% endif %} {% endif %}
 
-                    {% if settingsvars['threatcrowd'] == "on" %}
+                    {% if settings['threatcrowd'] == "on" %}
                 {% if records['type'] == "IPv4" %}
                 <div class="row">
                   <div class="col-lg-12">
@@ -421,7 +421,7 @@
                         </div>
                         {% endif %} {% endif %}
 
-                         {% if settingsvars['circlinfo'] == "on" %}
+                         {% if settings['circlinfo'] == "on" %}
                 <div class="row">
                   <div class="col-lg-12">
                     <div class="card">
@@ -454,7 +454,7 @@
                     </div>
                     </div>
                     {% endif %}
-            {% if settingsvars['pt_pdns'] == "on" %}
+            {% if settings['pt_pdns'] == "on" %}
             <div class="row">
               <div class="col-lg-12">
                 <div class="card">
@@ -490,7 +490,7 @@
               </div>
             </div>
             {% endif %}
-            {% if settingsvars['pt_whois'] == "on" %}
+            {% if settings['pt_whois'] == "on" %}
             <div class="row">
               <div class="col-lg-12">
                 <div class="card">
@@ -532,7 +532,7 @@
               </div>
             </div>
             {% endif %}
-            {% if settingsvars['pt_pssl'] == "on" %}
+            {% if settings['pt_pssl'] == "on" %}
             <div class="row">
               <div class="col-lg-12">
                 <div class="card">
@@ -568,7 +568,7 @@
               </div>
             </div>
             {% endif %}
-            {% if settingsvars['pt_host_attr'] == "on" %}
+            {% if settings['pt_host_attr'] == "on" %}
             <div class="row">
               <div class="col-lg-12">
                 <div class="card">
@@ -607,7 +607,7 @@
             </div>
             {% endif %}
 
-                              {% if settingsvars['farsightinfo'] == "on" %}
+                              {% if settings['farsightinfo'] == "on" %}
                     {% if records['type'] == "IPv4" %}
                 <div class="row">
                   <div class="col-lg-12">
