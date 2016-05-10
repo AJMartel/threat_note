@@ -826,6 +826,16 @@ def addrelationship():
         return render_template('error.html', error=e)
 
 
+@app.route('/delete/<uid>', methods=['GET'])
+@login_required
+def deleteobject(uid):
+    try:
+        Indicator.query.filter_by(object=uid).delete()
+        db_session.commit()
+        return redirect(url_for('home'))
+    except Exception as e:
+        return render_template('error.html', error=e)
+
 @app.route('/delete/network/<uid>', methods=['GET'])
 @login_required
 def deletenetworkobject(uid):
