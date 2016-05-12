@@ -5,6 +5,7 @@ from database import Base
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import ForeignKey
 
 
 class User(Base):
@@ -70,10 +71,11 @@ class Setting(Base):
     shodaninfo = Column('shodaninfo', String)
     shodankey = Column('shodankey', String)
 
-    def __init__(self, vtinfo, whoisinfo, odnsinfo, circlinfo, farsightinfo, shodaninfo, circlssl, threatcrowd, vtfile,
-                 pt_pdns, pt_whois, pt_pssl, pt_host_attr, pt_username, pt_api_key,
-                 apikey, odnskey, circlusername, circlpassword, farsightkey,
-                 cuckoo, cuckoohost, cuckooapiport, httpproxy, httpsproxy, shodankey):
+    def __init__(self, vtinfo, whoisinfo, odnsinfo, circlinfo, farsightinfo,
+                    shodaninfo, circlssl, threatcrowd, vtfile,
+                    pt_pdns, pt_whois, pt_pssl, pt_host_attr, pt_username, pt_api_key,
+                    apikey, odnskey, circlusername, circlpassword, farsightkey,
+                    cuckoo, cuckoohost, cuckooapiport, httpproxy, httpsproxy, shodankey):
         self.apikey = apikey
         self.odnskey = odnskey
         self.vtinfo = vtinfo
@@ -105,6 +107,84 @@ class Setting(Base):
 class Indicator(Base):
     __tablename__ = 'indicators'
     _id = Column('_id', Integer, primary_key=True, autoincrement=True)
+    indicator = Column('indicator', String)
+    type = Column('type', String)
+    firstseen = Column('firstseen', String)
+    lastseen = Column('lastseen', String)
+    diamondmodel = Column('diamondmodel', String)
+    attack_id = Column('attack_id',  Integer, ForeignKey("attacks._id"), nullable=False)
+    confidence = Column('confidence', String)
+    notes = Column('notes', String)
+    tags = Column('tags', String)
+    relationships = Column('relationships', String)
+
+    def __init__(self, indicator, _id, attack_id, type, firstseen, lastseen, diamondmodel, confidence,
+                 notes, tags, relationships):
+        self.   _id = _id
+        self.indicator = indicator
+        self.attack_id = attack_id
+        self.type = type
+        self.firstseen = firstseen
+        self.lastseen = lastseen
+        self.diamondmodel = diamondmodel
+        self.confidence = confidence
+        self.notes = notes
+        self.tags = tags
+        self.relationships = relationships
+
+
+class Attack(Base):
+    __tablename__ = 'attacks'
+    _id = Column('_id', Integer, primary_key=True, autoincrement=True)
+    campaign_id = Column('campaign_id', Integer, ForeignKey("campaigns._id"), nullable=False)
+    description = Column('description', String)
+    notes = Column('notes', String)
+    tags = Column('tags', String)
+
+    def __init__(self, attack_id, campaign_id, description, notes, tags):
+        self.attack_id = attack_id
+        self.campaign_id = campaign_id
+        self.description = description
+        self.notes = notes
+        self.tags = tags
+
+
+class Campaign(Base):
+    __tablename__ = 'campaigns'
+    _id = Column('_id', Integer, primary_key=True, autoincrement=True)
+    name = Column('name', String)
+    adversary_id = Column('adversary_id', Integer, ForeignKey("adversaries._id"), nullable=False)
+    notes = Column('notes', String)
+    tags = Column('tags', String)
+
+    def __init__(self, _id, name, adversary_id, notes, tags):
+        self._id = _id
+        self.name = name
+        self.adversary_id = adversary_id
+        self.notes = notes
+        self.tags = tags
+
+
+class Adversary(Base):
+    __tablename__ = 'adversaries'
+    _id = Column('_id', Integer, primary_key=True, autoincrement=True)
+    name = Column('name', String)
+    ttps = Column('ttps', String)
+    notes = Column('notes', String)
+    tags = Column('tags', String)
+
+    def __init__(self, adversary_id, name, ttps, notes, tags):
+        self.adversary_id = adversary_id
+        self.name = name
+        self.ttps = ttps
+        self.notes = notes
+        self.tags = tags
+
+
+'''
+class Indicator(Base):
+    __tablename__ = 'indicators'
+    _id = Column('_id', Integer, primary_key=True, autoincrement=True)
     object = Column('object', String)
     type = Column('type', String)
     firstseen = Column('firstseen', String)
@@ -128,3 +208,4 @@ class Indicator(Base):
         self.comments = comments
         self.tags = tags
         self.relationships = relationships
+'''

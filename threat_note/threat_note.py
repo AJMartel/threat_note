@@ -42,6 +42,9 @@ from libs import whoisinfo
 from libs.API import tn_api
 from libs.database import db_session
 from libs.database import init_db
+from libs.models import Adversary
+from libs.models import Attack
+from libs.models import Campaign
 from libs.models import Indicator
 from libs.models import Setting
 from libs.models import User
@@ -105,8 +108,8 @@ def register():
 
             # Set up the settings table when the first user is registered.
             if not Setting.query.filter_by(_id=1).first():
-                settings = Setting('off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', '', '', '',
-                                   '', '', '', '', '', '', '', '', '')
+                settings = Setting('off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off',
+                                   'off', 'off', '', '', '', '', '', '', '', '', '', '', '', '')
                 db_session.add(settings)
             # Commit all database changes once they have been completed
             db_session.commit()
@@ -146,16 +149,16 @@ def home():
         counts = Indicator.query.distinct(Indicator._id).count()
         types = Indicator.query.group_by(Indicator.type).all()
         network = Indicator.query.order_by(Indicator._id.desc()).limit(5).all()
-        campaigns = Indicator.query.group_by(Indicator.campaign).all()
+        campaigns = Campaign.query.group_by(Campaign.name).all()
         taglist = Indicator.query.distinct(Indicator.tags).all()
 
         # Generate Tag Cloud
         tags = set()
-        for object in taglist:
-            if object.tags == "":
+        for indicator in taglist:
+            if indicator.tags == "":
                 pass
             else:
-                for tag in object.tags.split(","):
+                for tag in indicator.tags.split(","):
                     tags.add(tag.strip())
 
         dictcount = {}
@@ -164,14 +167,14 @@ def home():
         typelist = []
 
         # Generate Campaign Statistics Graph
-        for object in campaigns:
-            c = Indicator.query.filter_by(campaign=object.campaign).count()
-            if object.campaign == '':
+        for campaign in campaigns:
+            c = Campaign.query.filter_by(campaign=campaign.name).count()
+            if campaign.name == '':
                 dictcount["category"] = "Unknown"
                 tempx = (float(c) / float(counts)) * 100
                 dictcount["value"] = round(tempx, 2)
             else:
-                dictcount["category"] = object.campaign
+                dictcount["category"] = campaign.name
                 tempx = (float(c) / float(counts)) * 100
                 dictcount["value"] = round(tempx, 2)
 
@@ -276,7 +279,7 @@ def campaigns():
     try:
         # Grab campaigns
         campaignents = dict()
-        rows = Indicator.query.group_by(Indicator.campaign).all()
+        rows = Campaign.query.group_by(Campaign.name).all()
         for c in rows:
             if c.campaign == '':
                 name = 'Unknown'
