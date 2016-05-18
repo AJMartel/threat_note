@@ -123,7 +123,7 @@ class Indicator(Base):
 
         self.indicator = indicator
         self.campaign_id = campaign_id
-        self.type = indicator_type
+        self.indicator_type = indicator_type
         self.firstseen = firstseen
         self.lastseen = lastseen
         self.diamondmodel = diamondmodel

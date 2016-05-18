@@ -9,7 +9,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="#">{{ records['object'] }}</a>
+        <a class="navbar-brand" href="#">{{ records['indicator'] }}</a>
       </div>
       {% include "userdropdown.html" %}
     </div>
@@ -20,7 +20,7 @@
         <div class="col-md-8 col-md-offset-2">
           <div class="card">
             <div class="content">
-              This page contains information on {{ records['object'] }} that was manually entered, as well as 3rd party supplemental information that can aide an analyst in research. 3rd party sources can include VirusTotal, PassiveTotal, Whois, geolocational data,
+              This page contains information on {{ records['indicator'] }} that was manually entered, as well as 3rd party supplemental information that can aide an analyst in research. 3rd party sources can include VirusTotal, PassiveTotal, Whois, geolocational data,
               and more. You can enable these 3rd party integrations in the <a href="/settings">settings</a> menu.
               </p>
               On this page, you can also edit the entry to add new fields or change any attributes previously entered. You can also delete the entry if it's no longer needed.
@@ -32,8 +32,8 @@
             <div class="card">
               <div class="header">
                 <h4 class="title"><i class="pe-7s-global"></i>
-                      <span style="padding-left:10px"></span>{{ records['object'] }}<div style="float: right;"><a href="/relationships/{{ records['object'] }}" class="btn btn-info btn-fill" rel="tooltip" title="Add Relationship"><i class="fa fa-link" ></i></a>
-                    <a href="/edit/{{ records['object'] }}" class="btn btn-info btn-fill" rel="tooltip" title="Edit Object"><i class="fa fa-pencil"></i></a>
+                      <span style="padding-left:10px"></span>{{ records['indicator'] }}<div style="float: right;"><a href="/relationships/{{ records['indicator'] }}" class="btn btn-info btn-fill" rel="tooltip" title="Add Relationship"><i class="fa fa-link" ></i></a>
+                    <a href="/edit/{{ records['indicator'] }}" class="btn btn-info btn-fill" rel="tooltip" title="Edit Object"><i class="fa fa-pencil"></i></a>
                   </div></h4>
 
                 <p class="category">{{ address }}</p>
@@ -52,7 +52,7 @@
                       <td>
                         <span class="text-capitalize">Object Type</span>
                       </td>
-                      <td>{{ records['type'] }}</td>
+                      <td>{{ records['indicator_type'] }}</td>
                     </tr>
                     {% if records['campaign']|length == 0 %}
                     <tr>
@@ -156,7 +156,7 @@
                         {% endfor %}
                       </td>
                     </tr>
-                    {% endif %} {% for key in records %} {% if key == "id" or key == "type" or key == "campaign" or key == "confidence" or key == "Firstseen" or key == "tags" or key == "Lastseen" or key == "comments" or key == "diamondmodel" or key == "object" or key ==
+                    {% endif %} {% for key in records %} {% if key == "id" or key == "indicator" or key == "indicator_type" or key == "campaign" or key == "confidence" or key == "Firstseen" or key == "tags" or key == "Lastseen" or key == "comments" or key == "diamondmodel" or key == "object" or key ==
                     "firstseen" or key == "relationships" or key == "lastseen" or records[key] == "None" or records[key] == "" %}
                     <div></div>
                     {% else %}
@@ -180,7 +180,7 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">Relationships</h4>
-                    <p class="category">This table shows the indicators related to {{ records['object'] }}</p>
+                    <p class="category">This table shows the indicators related to {{ records['indicator'] }}</p>
                   </div>
                   <div class="content">
                     <table class="table table-hover table-striped">
@@ -207,7 +207,7 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">Whois Information</h4>
-                    <p class="category">More information can be found at <a href="https://who.is/whois-ip/ip-address/{{ records['object'] }}" target="_blank">who.is</a></p>
+                    <p class="category">More information can be found at <a href="https://who.is/whois-ip/ip-address/{{ records['indicator'] }}" target="_blank">who.is</a></p>
                   </div>
                   <div class="content">
                     <table class="table table-hover table-striped">
@@ -250,7 +250,7 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">Whois Information</h4>
-                    <p class="category">More information can be found at <a href="https://who.is/whois/{{ records['object'] }}" target="_blank">who.is</a></p>
+                    <p class="category">More information can be found at <a href="https://who.is/whois/{{ records['indicator'] }}" target="_blank">who.is</a></p>
                   </div>
                   <div class="content">
                     <table class="table table-hover table-striped">
@@ -331,7 +331,7 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">OpenDNS Investigate Information</h4>
-                    <p class="category">More information can be found at <a href="https://sgraph.opendns.com/ip-view/{{ records['object'] }}" target="_blank">OpenDNS</a></p>
+                    <p class="category">More information can be found at <a href="https://sgraph.opendns.com/ip-view/{{ records['indicator'] }}" target="_blank">OpenDNS</a></p>
                   </div>
                   <div class="content">
                     <table class="table table-hover table-striped">
@@ -358,7 +358,7 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">OpenDNS Investigate Information</h4>
-                    <p class="category">More information can be found at <a href="https://sgraph.opendns.com/domain-view/name/{{ records['object'] }}/view" target="_blank">OpenDNS</a></p>
+                    <p class="category">More information can be found at <a href="https://sgraph.opendns.com/domain-view/name/{{ records['indicator'] }}/view" target="_blank">OpenDNS</a></p>
                   </div>
                   <div class="content">
                     <table class="table table-hover table-striped">
@@ -385,10 +385,10 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">ThreatCrowd Visualization</h4>
-                    <p class="category">More information can be found at <a href="https://www.threatcrowd.org/ip.php?ip={{ records['object'] }}" target="_blank">ThreatCrowd</a></p>
+                    <p class="category">More information can be found at <a href="https://www.threatcrowd.org/ip.php?ip={{ records['indicator'] }}" target="_blank">ThreatCrowd</a></p>
                   </div>
                   <div class="content">
-                    <iframe src="http://www.threatcrowd.org/graphHtml.php?ip={{ records['object'] }}" frameborder='0' style='height: 500px; width: 100%;'></iframe>
+                    <iframe src="http://www.threatcrowd.org/graphHtml.php?ip={{ records['indicator'] }}" frameborder='0' style='height: 500px; width: 100%;'></iframe>
                   </div>
                 </div>
               </div>
@@ -399,10 +399,10 @@
                 <div class="card">
                   <div class="header">
                     <h4 class="title">ThreatCrowd Visualization</h4>
-                    <p class="category">More information can be found at <a href="https://www.threatcrowd.org/domain.php?domain={{ records['object'] }}" target="_blank">ThreatCrowd</a></p>
+                    <p class="category">More information can be found at <a href="https://www.threatcrowd.org/domain.php?domain={{ records['indicator'] }}" target="_blank">ThreatCrowd</a></p>
                   </div>
                   <div class="content">
-                    <iframe src="http://www.threatcrowd.org/graphHtml.php?ip={{ records['object'] }}" frameborder='0' style='height: 500px; width: 100%;'></iframe>
+                    <iframe src="http://www.threatcrowd.org/graphHtml.php?ip={{ records['indicator'] }}" frameborder='0' style='height: 500px; width: 100%;'></iframe>
                   </div>
                 </div>
               </div>
@@ -467,10 +467,10 @@
                           <td>No Information Available</td>
                           <td></td>
                         </tr>
-                        {% else %} {% for i in circlssl[records['object']]['subjects'] %}
+                        {% else %} {% for i in circlssl[records['indicator']]['subjects'] %}
                         <tr>
                           <td>{{ i }}</td>
-                          <td>{{ circlssl[records['object']]['subjects'][i]['values'][0] }}</td>
+                          <td>{{ circlssl[records['indicator']]['subjects'][i]['values'][0] }}</td>
                         </tr>
                         {% endfor %} {% endif %}
                       </tbody>
