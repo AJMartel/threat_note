@@ -671,6 +671,8 @@ def objectsummary(uid):
     try:
         row = Indicator.query.filter_by(indicator=uid).first()
         records = helpers.row_to_dict(row)
+        campaign_name = Campaign.query.filter_by(_id=row.campaign_id).first().name
+        records['campaign'] = campaign_name
         settings = Setting.query.filter_by(_id=1).first()
         taglist = row.tags.split(",")
 
