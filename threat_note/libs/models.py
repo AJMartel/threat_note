@@ -108,22 +108,22 @@ class Indicator(Base):
     __tablename__ = 'indicators'
     _id = Column('_id', Integer, primary_key=True, autoincrement=True)
     indicator = Column('indicator', String)
-    type = Column('type', String)
+    indicator_type = Column('indicator_type', String)
     firstseen = Column('firstseen', String)
     lastseen = Column('lastseen', String)
     diamondmodel = Column('diamondmodel', String)
-    attack_id = Column('attack_id',  Integer, ForeignKey("attacks._id"), nullable=False)
+    campaign_id = Column('campaign_id',  Integer, ForeignKey("campaigns._id"), nullable=True)
     confidence = Column('confidence', String)
     notes = Column('notes', String)
     tags = Column('tags', String)
     relationships = Column('relationships', String)
 
-    def __init__(self, indicator, _id, attack_id, type, firstseen, lastseen, diamondmodel, confidence,
+    def __init__(self, indicator, campaign_id, indicator_type, firstseen, lastseen, diamondmodel, confidence,
                  notes, tags, relationships):
-        self.   _id = _id
+
         self.indicator = indicator
-        self.attack_id = attack_id
-        self.type = type
+        self.campaign_id = campaign_id
+        self.type = indicator_type
         self.firstseen = firstseen
         self.lastseen = lastseen
         self.diamondmodel = diamondmodel
@@ -131,6 +131,9 @@ class Indicator(Base):
         self.notes = notes
         self.tags = tags
         self.relationships = relationships
+
+    def get_id(self):
+        return self._id
 
 
 class Attack(Base):
@@ -148,6 +151,9 @@ class Attack(Base):
         self.notes = notes
         self.tags = tags
 
+    def get_id(self):
+        return self._id
+
 
 class Campaign(Base):
     __tablename__ = 'campaigns'
@@ -157,12 +163,14 @@ class Campaign(Base):
     notes = Column('notes', String)
     tags = Column('tags', String)
 
-    def __init__(self, _id, name, adversary_id, notes, tags):
-        self._id = _id
+    def __init__(self, name, adversary_id, notes, tags):
         self.name = name
         self.adversary_id = adversary_id
         self.notes = notes
         self.tags = tags
+
+    def get_id(self):
+        return self._id
 
 
 class Adversary(Base):
@@ -180,32 +188,5 @@ class Adversary(Base):
         self.notes = notes
         self.tags = tags
 
-
-'''
-class Indicator(Base):
-    __tablename__ = 'indicators'
-    _id = Column('_id', Integer, primary_key=True, autoincrement=True)
-    object = Column('object', String)
-    type = Column('type', String)
-    firstseen = Column('firstseen', String)
-    lastseen = Column('lastseen', String)
-    diamondmodel = Column('diamondmodel', String)
-    campaign = Column('campaign', String)
-    confidence = Column('confidence', String)
-    comments = Column('comments', String)
-    tags = Column('tags', String)
-    relationships = Column('relationships', String)
-
-    def __init__(self, object, type, firstseen, lastseen, diamondmodel, campaign, confidence, comments, tags,
-                 relationships):
-        self.object = object
-        self.type = type
-        self.firstseen = firstseen
-        self.lastseen = lastseen
-        self.diamondmodel = diamondmodel
-        self.campaign = campaign
-        self.confidence = confidence
-        self.comments = comments
-        self.tags = tags
-        self.relationships = relationships
-'''
+    def get_id(self):
+        return self._id

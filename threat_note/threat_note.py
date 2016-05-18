@@ -15,7 +15,6 @@ import random
 import re
 import time
 
-
 from flask import flash
 from flask import Flask
 from flask import make_response
@@ -103,7 +102,8 @@ def register():
         if user:
             flash('User exists.')
         else:
-            user = User(form.user.data.lower(), form.key.data, form.email.data)
+            # user = User(form.user.data.lower(), form.key.data, form.email.data)
+            user = User('a', 'a', 'a')
             db_session.add(user)
 
             # Set up the settings table when the first user is registered.
@@ -146,9 +146,9 @@ def logout():
 @login_required
 def home():
     try:
-        counts = Indicator.query.distinct(Indicator._id).count()
-        types = Indicator.query.group_by(Indicator.type).all()
-        network = Indicator.query.order_by(Indicator._id.desc()).limit(5).all()
+        counts = Indicator.query.distinct(Indicator.indicator).count()
+        types = Indicator.query.group_by(Indicator.indicator_type).all()
+        network = Indicator.query.order_by(Indicator.indicator.desc()).limit(5).all()
         campaigns = Campaign.query.group_by(Campaign.name).all()
         taglist = Indicator.query.distinct(Indicator.tags).all()
 
@@ -168,7 +168,7 @@ def home():
 
         # Generate Campaign Statistics Graph
         for campaign in campaigns:
-            c = Campaign.query.filter_by(campaign=campaign.name).count()
+            c = Indicator.query.filter_by(campaign_id=campaign.get_id()).count()
             if campaign.name == '':
                 dictcount["category"] = "Unknown"
                 tempx = (float(c) / float(counts)) * 100
@@ -182,8 +182,8 @@ def home():
 
         # Generate Indicator Type Graph
         for t in types:
-            c = Indicator.query.filter_by(type=t.type).count()
-            typecount["category"] = t.type
+            c = Indicator.query.filter_by(indicator_type=t.indicator_type).count()
+            typecount["category"] = t.indicator_type
             tempx = float(c) / float(counts)
             newtemp = tempx * 100
             typecount["value"] = round(newtemp, 2)
@@ -221,7 +221,7 @@ def tags():
                 rows = Indicator.query.filter(Indicator.tags.like('%' + tag + '%')).all()
                 tmp = {}
                 for row in rows:
-                    tmp[row.object] = row.type
+                    tmp[row.object] = row.indicator_type
                     indicators.append(tmp)
 
         return render_template('tags.html', tags=taglist)
@@ -234,7 +234,7 @@ def tags():
 def networks():
     try:
         # Grab only network indicators
-        network = Indicator.query.filter(Indicator.type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+        network = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
         return render_template('networks.html', network=network)
     except Exception as e:
         return render_template('error.html', error=e)
@@ -245,7 +245,7 @@ def networks():
 def threatactors():
     try:
         # Grab threat actors
-        threatactors = Indicator.query.filter(Indicator.type == 'Threat Actor').all()
+        threatactors = Indicator.query.filter(Indicator.indicator_type == 'Threat Actor').all()
         return render_template('threatactors.html', network=threatactors)
     except Exception as e:
         return render_template('error.html', error=e)
@@ -267,7 +267,7 @@ def victims():
 def files():
     try:
         # Grab files/hashes
-        files = Indicator.query.filter(Indicator.type == ('Hash')).all()
+        files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
         return render_template('files.html', network=files)
     except Exception as e:
         return render_template('error.html', error=e)
@@ -293,7 +293,7 @@ def campaigns():
             rows = Indicator.query.filter(Indicator.campaign == camp).all()
             tmp = {}
             for i in rows:
-                tmp[i.object] = i.type
+                tmp[i.object] = i.indicator_type
                 indicators.append(tmp)
         return render_template('campaigns.html', campaignents=campaignents)
     except Exception as e:
@@ -317,10 +317,11 @@ def campaignsummary(uid):
     try:
         http = Indicator.query.filter_by(object=uid).first()
         # Run ipwhois or domainwhois based on the type of indicator
-        if str(http.type) == "IPv4" or str(http.type) == "IPv6" or str(http.type) == "Domain" or \
-                str(http.type) == "Network":
+        if str(http.indicator_type) == "IPv4" or str(http.indicator_type) == "IPv6" or str(
+            http.indicator_type) == "Domain" or \
+                str(http.indicator_type) == "Network":
             return redirect(url_for('objectsummary', uid=http.object))
-        elif str(http.type) == "Hash":
+        elif str(http.indicator_type) == "Hash":
             return redirect(url_for('filesobject', uid=http.object))
         else:
             return redirect(url_for('threatactorobject', uid=http.object))
@@ -338,12 +339,25 @@ def newobj():
         return render_template('error.html', error=e)
 
 
+@app.route('/insert/attack/', methods=['POST'])
+@login_required
+def addattack():
+    try:
+        imd = ImmutableMultiDict(request.form)
+        inputs = helpers.convert(imd)
+        attack = Attack(1, 'desc', 'note', None)
+        db_session.add(attack)
+        db_session.commit()
+    except:
+        print 'error adding attack'
+        exit()
+
+
 @app.route('/insert/object/', methods=['POST'])
 @login_required
 def newobject():
     try:
-        something = request.form
-        imd = ImmutableMultiDict(something)
+        imd = ImmutableMultiDict(request.form)
         records = helpers.convert(imd)
 
         # Import indicators from Cuckoo for the selected analysis task
@@ -381,6 +395,20 @@ def newobject():
             else:
                 errormessage = 'Task is not a file analysis'
                 return redirect(url_for('import_indicators'))
+        try:
+            row = Campaign.query.filter_by(name=records['inputcampaign']).first()
+            if row:
+                campaign_id = row.get_id()
+            else:
+                camp = Campaign(name=records['inputcampaign'], adversary_id=1, notes='', tags=records['tags'])
+                db_session.add(camp)
+                db_session.commit()
+
+                row = Campaign.query.filter_by(name=records['inputcampaign']).first()
+                campaign_id = row.get_id()
+
+        except Exception as e:
+            print str(e)
 
         if 'inputtype' in records:
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
@@ -392,16 +420,21 @@ def newobject():
             for newobject in records['inputobject']:
                 if records['inputtype'] == "IPv4":
                     if ipregex:
-                        object = Indicator.query.filter_by(object=newobject).first()
-                        if object is None:
-                            ipv4_indicator = Indicator(newobject.strip(), records['inputtype'],
-                                                       records['inputfirstseen'], records['inputlastseen'],
-                                                       records['diamondmodel'], records['inputcampaign'],
-                                                       records['confidence'], records['comments'], records['tags'], None)
+                        indicator = Indicator.query.filter_by(indicator=newobject).first()
+                        if indicator is None:
+                            ipv4_indicator = Indicator(indicator=newobject.strip(), campaign_id=campaign_id,
+                                                       indicator_type=records['inputtype'],
+                                                       firstseen=records['inputfirstseen'],
+                                                       lastseen=records['inputlastseen'],
+                                                       diamondmodel=records['diamondmodel'],
+                                                       confidence=records['confidence'],
+                                                       notes=records['comments'],
+                                                       tags=records['tags'],
+                                                       relationships=None)
                             db_session.add(ipv4_indicator)
                             db_session.commit()
-                            network = Indicator.query.filter(Indicator.type.in_(
-                                ('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+                            # network = Indicator.query.filter(Indicator.indicator_type.in_(
+                            #    ('IPv4', 'IPv6', 'Domain', 'Network'))).all()
                         else:
                             errormessage = "Entry already exists in database."
                             return render_template('newobject.html', errormessage=errormessage,
@@ -423,11 +456,17 @@ def newobject():
                                                comments=records['comments'], diamondmodel=records['diamondmodel'],
                                                tags=records['tags'])
                 else:
-                    object = Indicator.query.filter_by(object=newobject).first()
-                    if object is None:
-                        indicator = Indicator(newobject.strip(), records['inputtype'], records['inputfirstseen'],
-                                              records['inputlastseen'], records['diamondmodel'], records['inputcampaign'],
-                                              records['confidence'], records['comments'], records['tags'], None)
+                    indicator = Indicator.query.filter_by(indicator=newobject).first()
+                    if indicator is None:
+                        indicator = Indicator(indicator=newobject.strip(), campaign_id=campaign_id,
+                                              indicator_type=records['inputtype'],
+                                              firstseen=records['inputfirstseen'],
+                                              lastseen=records['inputlastseen'],
+                                              diamondmodel=records['diamondmodel'],
+                                              confidence=records['confidence'],
+                                              notes=records['comments'],
+                                              tags=records['tags'],
+                                              relationships=None)
                         db_session.add(indicator)
                         db_session.commit()
                     else:
@@ -441,10 +480,11 @@ def newobject():
                                                diamondmodel=records['diamondmodel'],
                                                tags=records['tags'])
 
-            # TODO: Change 'network' to 'object' in HTML templates to standardize on verbiage
-            if records['inputtype'] == "IPv4" or records['inputtype'] == "Domain" or records['inputtype'] == "Network"\
-                    or records['inputtype'] == "IPv6":
-                network = Indicator.query.filter(Indicator.type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+            # TODO: Change 'network' to 'indicator' in HTML templates to standardize on verbiage
+            if records['inputtype'] == "IPv4" or records['inputtype'] == "Domain" or records['inputtype'] == "Network" \
+                or records['inputtype'] == "IPv6":
+                network = Indicator.query.filter(
+                    Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
                 return render_template('networks.html', network=network)
 
             elif records['diamondmodel'] == "Victim":
@@ -452,11 +492,11 @@ def newobject():
                 return render_template('victims.html', network=victims)
 
             elif records['inputtype'] == "Hash":
-                files = Indicator.query.filter(Indicator.type == ('Hash')).all()
+                files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
                 return render_template('files.html', network=files)
 
             else:
-                threatactors = Indicator.query.filter(Indicator.type == ('Threat Actors')).all()
+                threatactors = Indicator.query.filter(Indicator.indicator_type == ('Threat Actors')).all()
                 return render_template('threatactors.html', network=threatactors)
     except Exception as e:
         return render_template('error.html', error=e)
@@ -472,10 +512,10 @@ def editobject(uid):
     except Exception as e:
         return render_template('error.html', error=e)
 
+
 @app.route('/editcampaign/<uid>', methods=['POST', 'GET'])
 @login_required
 def editcampaign(uid):
-
     return render_template('error.html', error='Not Implemented')
 
 
@@ -629,7 +669,7 @@ def insertnewfield():
 @login_required
 def objectsummary(uid):
     try:
-        row = Indicator.query.filter_by(object=uid).first()
+        row = Indicator.query.filter_by(indicator=uid).first()
         records = helpers.row_to_dict(row)
         settings = Setting.query.filter_by(_id=1).first()
         taglist = row.tags.split(",")
@@ -638,8 +678,8 @@ def objectsummary(uid):
         if row.relationships:
             rellist = row.relationships.split(",")
             for rel in rellist:
-                row = Indicator.query.filter_by(object=rel).first()
-                temprel[row.object] = row.type
+                row = Indicator.query.filter_by(indicator=rel).first()
+                temprel[row.object] = row.indicator_type
 
         reldata = len(temprel)
         jsonvt = ""
@@ -655,68 +695,68 @@ def objectsummary(uid):
         pt_host_attr_data = ""
 
         # Run ipwhois or domainwhois based on the type of indicator
-        if str(row.type) == "IPv4" or str(row.type) == "IPv6":
+        if str(row.indicator_type) == "IPv4" or str(row.indicator_type) == "IPv6":
             if settings.vtinfo == "on":
-                jsonvt = virustotal.vt_ipv4_lookup(str(row.object))
+                jsonvt = virustotal.vt_ipv4_lookup(str(row.indicator))
             if settings.whoisinfo == "on":
-                whoisdata = whoisinfo.ipwhois(str(row.object))
+                whoisdata = whoisinfo.ipwhois(str(row.indicator))
             if settings.odnsinfo == "on":
-                odnsdata = opendns.ip_investigate(str(row.object))
+                odnsdata = opendns.ip_investigate(str(row.indicator))
             if settings.circlinfo == "on":
-                circldata = circl.circlquery(str(row.object))
+                circldata = circl.circlquery(str(row.indicator))
             if settings.circlssl == "on":
-                circlssl = circl.circlssl(str(row.object))
+                circlssl = circl.circlssl(str(row.indicator))
             if settings.pt_pdns == "on":
-                pt_pdns_data = passivetotal.pt_lookup('dns', str(row.object))
+                pt_pdns_data = passivetotal.pt_lookup('dns', str(row.indicator))
             if settings.pt_whois == "on":
-                pt_whois_data = passivetotal.pt_lookup('whois', str(row.object))
+                pt_whois_data = passivetotal.pt_lookup('whois', str(row.indicator))
             if settings.pt_pssl == "on":
-                pt_pssl_data = passivetotal.pt_lookup('ssl', str(row.object))
+                pt_pssl_data = passivetotal.pt_lookup('ssl', str(row.indicator))
             if settings.pt_host_attr == "on":
-                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(row.object))
+                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(row.indicator))
             if settings.farsightinfo == "on":
-                farsightdata = farsight.farsightip(str(row.object))
+                farsightdata = farsight.farsightip(str(row.indicator))
             if settings.shodaninfo == "on":
-                shodandata = shodan.shodan(str(row.object))
+                shodandata = shodan.shodan(str(row.indicator))
 
-        elif str(row.type) == "Domain":
+        elif str(row.indicator_type) == "Domain":
             if settings.whoisinfo == "on":
-                whoisdata = whoisinfo.domainwhois(str(row.object))
+                whoisdata = whoisinfo.domainwhois(str(row.indicator))
             if settings.vtinfo == "on":
-                jsonvt = virustotal.vt_domain_lookup(str(row.object))
+                jsonvt = virustotal.vt_domain_lookup(str(row.indicator))
             if settings.odnsinfo == "on":
-                odnsdata = opendns.domains_investigate(str(row.object))
+                odnsdata = opendns.domains_investigate(str(row.indicator))
             if settings.circlinfo == "on":
-                circldata = circl.circlquery(str(row.object))
+                circldata = circl.circlquery(str(row.indicator))
             if settings.pt_pdns == "on":
-                pt_pdns_data = passivetotal.pt_lookup('dns', str(row.object))
+                pt_pdns_data = passivetotal.pt_lookup('dns', str(row.indicator))
             if settings.pt_whois == "on":
-                pt_whois_data = passivetotal.pt_lookup('whois', str(row.object))
+                pt_whois_data = passivetotal.pt_lookup('whois', str(row.indicator))
             if settings.pt_pssl == "on":
-                pt_pssl_data = passivetotal.pt_lookup('ssl', str(row.object))
+                pt_pssl_data = passivetotal.pt_lookup('ssl', str(row.indicator))
             if settings.pt_host_attr == "on":
-                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(row.object))
+                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(row.indicator))
             if settings.farsightinfo == "on":
-                farsightdata = farsight.farsightdomain(str(row.object))
+                farsightdata = farsight.farsightdomain(str(row.indicator))
             if settings.shodaninfo == "on":
-                shodandata = shodan.shodan(str(row.object))
+                shodandata = shodan.shodan(str(row.indicator))
 
         if settings.whoisinfo == "on":
-            if str(row.type) == "Domain":
+            if str(row.indicator_type) == "Domain":
                 address = str(whoisdata['city']) + ", " + str(whoisdata['country'])
             else:
                 address = str(whoisdata['nets'][0]['city']) + ", " + str(
                     whoisdata['nets'][0]['country'])
         else:
-            address = "Information about " + str(row.object)
+            address = "Information about " + str(row.indicator)
         return render_template('networkobject.html', **locals())
     except Exception as e:
         return render_template('error.html', error=e)
 
 
-#@app.route('/victims/<uid>/info', methods=['GET'])
-#@login_required
-#def victimobject(uid):
+# @app.route('/victims/<uid>/info', methods=['GET'])
+# @login_required
+# def victimobject(uid):
 #    try:
 #        display_info(uid, 'victimobject.html')
 #    except Exception as e:
@@ -735,13 +775,12 @@ def threatactorobject(uid):
             rellist = row.relationships.split(",")
             for rel in rellist:
                 reltype = Indicator.query.filter(Indicator.object == rel)
-                temprel[reltype.object] = reltype.type
+                temprel[reltype.object] = reltype.indicator_type
 
         reldata = len(temprel)
         return render_template('threatactorobject.html', records=newdict, temprel=temprel, reldata=reldata)
     except Exception as e:
         return render_template('error.html', error=e)
-
 
 
 @app.route('/files/<uid>/info', methods=['GET'])
@@ -758,7 +797,7 @@ def filesobject(uid):
             rellist = http.relationships.split(",")
             for rel in rellist:
                 reltype = Indicator.query.filter(Indicator.object == rel).first()
-                temprel[reltype.object] = reltype.type
+                temprel[reltype.object] = reltype.indicator_type
 
         reldata = len(temprel)
         if settings.vtfile == "on":
@@ -782,7 +821,7 @@ def relationships(uid):
             temprel = {}
             for rel in rellist:
                 reltype = Indicator.query.filter_by(object=rel).first()
-                temprel[reltype.object] = reltype.type
+                temprel[reltype.object] = reltype.indicator_type
         return render_template('addrelationship.html', records=row, indicators=indicators)
     except Exception as e:
         return render_template('error.html', error=e)
@@ -839,13 +878,14 @@ def deleteobject(uid):
     except Exception as e:
         return render_template('error.html', error=e)
 
+
 @app.route('/delete/network/<uid>', methods=['GET'])
 @login_required
 def deletenetworkobject(uid):
     try:
         Indicator.query.filter_by(object=uid).delete()
         db_session.commit()
-        network = Indicator.query.filter(Indicator.type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+        network = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
         return render_template('networks.html', network=network)
     except Exception as e:
         return render_template('error.html', error=e)
