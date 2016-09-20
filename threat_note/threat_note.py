@@ -366,6 +366,7 @@ def newobject():
             if host_data and dns_data and sha1 and firstseen:
                 # Import IP Indicators from Cuckoo Task
                 for ip in host_data:
+                    ip = ip['ip']
                     ind = Indicator.query.filter_by(object=ip).first()
                     if ind is None:
                         indicator = Indicator(ip.strip(), 'IPv4', firstseen, '', 'Infrastructure', records['campaign'],
@@ -965,6 +966,119 @@ def profile():
                 errormessage = "Current password is incorrect."
                 return render_template('profile.html', errormessage=errormessage)
         return render_template('profile.html')
+    except Exception as e:
+        return render_template('error.html', error=e)
+
+
+@app.route('/victims/<uid>/info', methods=['GET'])
+@login_required
+def victimobject(uid):
+    try:
+        http = Indicator.query.filter(Indicator.object == uid).first()
+        newdict = helpers.row_to_dict(http)
+        settings = Setting.query.filter_by(_id=1).first()
+        taglist = http.tags.split(",")
+
+        temprel = {}
+        if http.relationships:
+            rellist = http.relationships.split(",")
+            for rel in rellist:
+                reltype = Indicator.query.filter(Indicator.object == rel)
+                temprel[reltype.object] = reltype.type
+
+        reldata = len(temprel)
+        jsonvt = ""
+        whoisdata = ""
+        odnsdata = ""
+        circldata = ""
+        circlssl = ""
+        pt_pdns_data = ""
+        pt_whois_data = ""
+        pt_pssl_data = ""
+        pt_host_attr_data = ""
+        farsightdata = ""
+        # shodaninfo = ""
+        # Run ipwhois or domainwhois based on the type of indicator
+        if str(http.type) == "IPv4" or str(http.type) == "IPv6":
+            if settings.vtinfo == "on":
+                jsonvt = virustotal.vt_ipv4_lookup(str(http.object))
+            if settings.whoisinfo == "on":
+                whoisdata = whoisinfo.ipwhois(str(http.object))
+            if settings.odnsinfo == "on":
+                odnsdata = opendns.ip_investigate(str(http.object))
+            if settings.circlinfo == "on":
+                circldata = circl.circlquery(str(http.object))
+            if settings.circlssl == "on":
+                circlssl = circl.circlssl(str(http.object))
+            if settings.pt_pdns == "on":
+                pt_pdns_data = passivetotal.pt_lookup('dns', str(http.object))
+            if settings.pt_whois == "on":
+                pt_whois_data = passivetotal.pt_lookup('whois', str(http.object))
+            if settings.pt_pssl == "on":
+                pt_pssl_data = passivetotal.pt_lookup('ssl', str(http.object))
+            if settings.pt_host_attr == "on":
+                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(http.object))
+            if settings.farsightinfo == "on":
+                farsightdata = farsight.farsightip(str(http.object))
+        elif str(http.type) == "Domain":
+            if settings.whoisinfo == "on":
+                whoisdata = whoisinfo.domainwhois(str(http.object))
+            if settings.vtinfo == "on":
+                jsonvt = virustotal.vt_domain_lookup(str(http.object))
+            if settings.odnsinfo == "on":
+                odnsdata = opendns.domains_investigate(
+                    str(http.object))
+            if settings.circlinfo == "on":
+                circldata = circl.circlquery(str(http.object))
+            if settings.pt_pdns == "on":
+                pt_pdns_data = passivetotal.pt_lookup('dns', str(http.object))
+            if settings.pt_whois == "on":
+                pt_whois_data = passivetotal.pt_lookup('whois', str(http.object))
+            if settings.pt_pssl == "on":
+                pt_pssl_data = passivetotal.pt_lookup('ssl', str(http.object))
+            if settings.pt_host_attr == "on":
+                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(http.object))
+        if settings.whoisinfo == "on":
+            if str(http.type) == "Domain":
+                address = str(whoisdata['city']) + ", " + str(
+                    whoisdata['country'])
+            else:
+                address = str(whoisdata['nets'][0]['city']) + ", " + str(
+                    whoisdata['nets'][0]['country'])
+        else:
+            address = "Information about " + str(http.object)
+        return render_template('victimobject.html', records=newdict, jsonvt=jsonvt, whoisdata=whoisdata,
+                               odnsdata=odnsdata, circldata=circldata, circlssl=circlssl, settingsvars=settings,
+                               address=address, temprel=temprel, reldata=reldata, taglist=taglist, farsightdata=farsightdata,
+                               pt_pdns_data=pt_pdns_data, pt_whois_data=pt_whois_data, pt_pssl_data=pt_pssl_data,
+                               pt_host_attr_data=pt_host_attr_data)
+    except Exception as e:
+        return render_template('error.html', error=e)
+
+
+@app.route('/files/<uid>/info', methods=['GET'])
+@login_required
+def filesobject(uid):
+    try:
+        http = Indicator.query.filter(Indicator.object == uid).first()
+        newdict = helpers.row_to_dict(http)
+        settings = Setting.query.filter_by(_id=1).first()
+        taglist = http.tags.split(",")
+
+        temprel = {}
+        if http.relationships:
+            rellist = http.relationships.split(",")
+            for rel in rellist:
+                reltype = Indicator.query.filter(Indicator.object == rel).first()
+                temprel[reltype.object] = reltype.type
+
+        reldata = len(temprel)
+        if settings.vtfile == "on":
+            jsonvt = virustotal.vt_hash_lookup(str(http.object))
+        else:
+            jsonvt = ""
+        return render_template('fileobject.html', records=newdict, settingsvars=settings, address=http.object,
+                               temprel=temprel, reldata=reldata, jsonvt=jsonvt, taglist=taglist)
     except Exception as e:
         return render_template('error.html', error=e)
 
