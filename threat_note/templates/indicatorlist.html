@@ -12,7 +12,7 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">Network Indicators</a>
+            <a class="navbar-brand" href="#">{{title}}</a>
           </div>
           {% include "userdropdown.html" %}
         </div>
@@ -23,17 +23,17 @@
         <div class="container-fluid">
           <div class="row">
             <div class="col-md-12">
-              This page contains all the network indicators in the threat_note database, which includes IP Addresses, Domains and Network Blocks. Along with your indicators, you'll also find key attributes and their values that have been entered.
+              This page contains all the {{title|lower()}} in the threat_note database, which includes IP Addresses, Domains and Network Blocks. Along with your indicators, you'll also find key attributes and their values that have been entered.
               </br>
               </br>
               <div class="card">
                 <div style="" class="header">
                   <div style="float: left;">
-                    <h4 class="title">Network Indicators</h4>
-                    <p class="category">This table shows you all of your network indicators.</p>
+                    <h4 class="title"> {{title}}</h4>
+                    <p class="category">This table shows you all of your {{title|lower()}}.</p>
                   </div>
                   <div style="float: right;">
-                    <a href="/newobject" class="btn btn-info btn-fill"><i class="fa fa-plus"></i> New Object</a>
+                    <a href="/newobject" class="btn btn-info btn-fill"><i class="fa fa-plus"></i> New Indicator</a>
                   </div>
 
                 </div>
@@ -53,8 +53,8 @@
                     <tbody>
                       {% for p in network %}
                       <tr>
-                        <td><a href="/network/{{ p['object'] }}/info">{{ p['object'] }}</td>
-                                           <td>{{ p['type'] }}</td>
+                        <td><a href="/network/{{ p['indicator'] }}/info">{{ p['indicator'] }}</td>
+                                           <td>{{ p['indicator_type'] }}</td>
                                             {% if p['firstseen']|length == 0 %}
                                             <td>-</td>
                                             {% else %}
