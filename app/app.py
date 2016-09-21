@@ -1,36 +1,15 @@
-#!/usr/bin/env python
 
-#
-# threat_note v3.0                                      #
-# Developed By: Brian Warehime                          #
-# Defense Point Security (defpoint.com)                 #
-# October 26, 2015                                      #
-#
 
-import argparse
 import csv
-import hashlib
 import io
-import random
 import re
 import time
+import hashlib
+import random
 
-from flask import flash
-from flask import Flask
-from flask import make_response
-from flask import redirect
-from flask import render_template
-from flask import request
-from flask import url_for
-from flask_login import current_user
-from flask_login import login_required
-from flask_login import login_user
-from flask_login import LoginManager
-from flask_login import logout_user
-from flask_wtf import Form
+
 from libs import circl
 from libs import cuckoo
-from libs import database
 from libs import farsight
 from libs import helpers
 from libs import opendns
@@ -38,81 +17,39 @@ from libs import passivetotal
 from libs import shodan
 from libs import virustotal
 from libs import whoisinfo
-from libs.API import tn_api
-from libs.database import db_session
-from libs.database import init_db
-from libs.models import Adversary
-from libs.models import Attack
-from libs.models import Campaign
-from libs.models import Indicator
-from libs.models import Setting
-from libs.models import User
+from threat_note.models import Indicator
+from threat_note.models import Campaign
+from threat_note.models import Setting
+from threat_note.models import User
+
 from werkzeug.datastructures import ImmutableMultiDict
-from wtforms import PasswordField
-from wtforms import StringField
-from wtforms.validators import DataRequired
-
-#
-# Configuration #
-#
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'yek_terces'
-app.debug = True
-app.template_debug = True
-lm = LoginManager()
-lm.init_app(app)
-lm.login_view = 'login'
-
-# Setup Database if Necessary
-init_db()
-
-app.register_blueprint(tn_api)
 
 
-class LoginForm(Form):
-    user = StringField('user', validators=[DataRequired()])
-    password = PasswordField('password', validators=[DataRequired()])
-
-    def get_user(self):
-        return db_session.query(User).filter_by(user=self.user.data.lower(), password=hashlib.md5(
-            self.password.data.encode('utf-8')).hexdigest()).first()
 
 
-class RegisterForm(Form):
-    user = StringField('user', validators=[DataRequired()])
-    key = PasswordField('key', validators=[DataRequired()])
-    email = StringField('email')
 
 
-#
-# Creating routes #
-#
-
-@lm.user_loader
-def load_user(id):
-    return db_session.query(User).filter_by(_id=id).first()
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        user = db_session.query(User).filter_by(user=form.user.data.lower()).first()
+        user = db.query(User).filter_by(user=form.user.data.lower()).first()
         if user:
             flash('User exists.')
         else:
             # user = User(form.user.data.lower(), form.key.data, form.email.data)
             user = User('a', 'a', 'a')
-            db_session.add(user)
+            db.add(user)
 
             # Set up the settings table when the first user is registered.
             if not Setting.query.filter_by(_id=1).first():
                 settings = Setting('off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off',
-                                   'off', 'off', '', '', '', '', '', '', '', '', '', '', '', '')
-                db_session.add(settings)
+                                   'off', '', '', '', '', '', '', '', '', '', '', '', '', '')
+                db.add(settings)
             # Commit all database changes once they have been completed
-            db_session.commit()
+            db.commit()
             login_user(user)
 
     if current_user.is_authenticated:
@@ -148,10 +85,13 @@ def home():
     try:
         counts = Indicator.query.distinct(Indicator.indicator).count()
         types = Indicator.query.group_by(Indicator.indicator_type).all()
-        network = Indicator.query.order_by(Indicator.indicator.desc()).limit(5).all()
+        #network = Indicator.query.order_by(Indicator.indicator.desc()).limit(5).all()
         campaigns = Campaign.query.group_by(Campaign.name).all()
         taglist = Indicator.query.distinct(Indicator.tags).all()
 
+        network = Indicator.query.join(Campaign, Indicator.campaign_id == Campaign._id).order_by(Indicator._id.desc()).limit(5).all()
+        for i in network:
+            print i.name
         # Generate Tag Cloud
         tags = set()
         for indicator in taglist:
@@ -346,13 +286,13 @@ def addattack():
         imd = ImmutableMultiDict(request.form)
         inputs = helpers.convert(imd)
         attack = Attack(1, 'desc', 'note', None)
-        db_session.add(attack)
-        db_session.commit()
+        db.add(attack)
+        db.commit()
     except:
         print 'error adding attack'
         exit()
 
-
+@app.route('/update/indicator/', methods=['POST'])
 @app.route('/insert/object/', methods=['POST'])
 @login_required
 def newobject():
@@ -371,8 +311,8 @@ def newobject():
                     if ind is None:
                         indicator = Indicator(ip.strip(), 'IPv4', firstseen, '', 'Infrastructure', records['campaign'],
                                               'Low', '', records['tags'], '')
-                        db_session.add(indicator)
-                        db_session.commit()
+                        db.add(indicator)
+                        db.commit()
 
                     # Import Domain Indicators from Cuckoo Task
                     for dns in dns_data:
@@ -380,36 +320,33 @@ def newobject():
                         if ind is None:
                             indicator = Indicator(dns['request'], 'Domain', firstseen, '', 'Infrastructure',
                                                   records['campaign'], 'Low', '', records['tags'], '')
-                            db_session.add(indicator)
-                            db_session.commit()
+                            db.add(indicator)
+                            db.commit()
 
                     # Import File/Hash Indicators from Cuckoo Task
                     ind = Indicator.query.filter_by(object=sha1).first()
                     if ind is None:
                         indicator = Indicator(sha1, 'Hash', firstseen, '', 'Capability',
                                               records['campaign'], 'Low', '', records['tags'], '')
-                        db_session.add(indicator)
-                        db_session.commit()
+                        db.add(indicator)
+                        db.commit()
 
                 # Redirect to Dashboard after successful import
                 return redirect(url_for('home'))
             else:
                 errormessage = 'Task is not a file analysis'
                 return redirect(url_for('import_indicators'))
-        try:
+
+        row = Campaign.query.filter_by(name=records['inputcampaign']).first()
+        if row:
+            campaign_id = row.get_id()
+        else:
+            camp = Campaign(name=records['inputcampaign'], adversary_id=1, notes='', tags=records['tags'])
+            db.add(camp)
+            db.commit()
+
             row = Campaign.query.filter_by(name=records['inputcampaign']).first()
-            if row:
-                campaign_id = row.get_id()
-            else:
-                camp = Campaign(name=records['inputcampaign'], adversary_id=1, notes='', tags=records['tags'])
-                db_session.add(camp)
-                db_session.commit()
-
-                row = Campaign.query.filter_by(name=records['inputcampaign']).first()
-                campaign_id = row.get_id()
-
-        except Exception as e:
-            print str(e)
+            campaign_id = row.get_id()
 
         if 'inputtype' in records:
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
@@ -432,8 +369,8 @@ def newobject():
                                                        notes=records['comments'],
                                                        tags=records['tags'],
                                                        relationships=None)
-                            db_session.add(ipv4_indicator)
-                            db_session.commit()
+                            db.add(ipv4_indicator)
+                            db.commit()
                             # network = Indicator.query.filter(Indicator.indicator_type.in_(
                             #    ('IPv4', 'IPv6', 'Domain', 'Network'))).all()
                         else:
@@ -468,8 +405,8 @@ def newobject():
                                               notes=records['comments'],
                                               tags=records['tags'],
                                               relationships=None)
-                        db_session.add(indicator)
-                        db_session.commit()
+                        db.add(indicator)
+                        db.commit()
                     else:
                         errormessage = "Entry already exists in database."
                         return render_template('newobject.html', errormessage=errormessage,
@@ -591,14 +528,14 @@ def updatesettings():
         settings.pt_api_key = newdict['pt_api_key']
         settings.shodankey = newdict['shodankey']
 
-        db_session.commit()
+        db.commit()
         settings = Setting.query.first()
 
         return render_template('settings.html', records=settings)
     except Exception as e:
         return render_template('error.html', error=e)
 
-
+'''
 @app.route('/update/indicator/', methods=['POST'])
 @login_required
 def updateobject():
@@ -610,6 +547,19 @@ def updateobject():
         # taglist = records['tags'].split(",") - Unused
         # indicator = Indicator.query.filter_by(object=records['object']).first() - Unused
 
+
+        # Campaign Name to Campign ID lookup
+        row = Campaign.query.filter_by(name=records['inputcampaign']).first()
+        if row:
+            campaign_id = row.get_id()
+        else:
+            camp = Campaign(name=records['inputcampaign'], adversary_id=1, notes='', tags=records['tags'])
+            #db.add(camp)
+            #db.commit()
+
+            row = Campaign.query.filter_by(name=records['inputcampaign']).first()
+            campaign_id = row.get_id()
+
         try:
             Indicator.query.filter_by(indicator=records['indicator']).update(records)
         except Exception as e:
@@ -617,11 +567,11 @@ def updateobject():
             for k, v in records.iteritems():
                 if Indicator.query.group_by(k).first() is None:
                     print 'ALTER Table'
-                    # db_session.engine.execute("ALTER TABLE indicators ADD COLUMN " + k + " TEXT DEFAULT ''")
+                    # db.engine.execute("ALTER TABLE indicators ADD COLUMN " + k + " TEXT DEFAULT ''")
 
-        db_session.commit()
+        db.commit()
 
-        # db_session.execute('ALTER  TABLE indicators ADD COLUMN')
+        # db.execute('ALTER  TABLE indicators ADD COLUMN')
 
         # con = helpers.db_connection()
         # with con:
@@ -642,7 +592,7 @@ def updateobject():
             return redirect(url_for('threatactorobject', uid=str(records['object'])))
     except Exception as e:
         return render_template('error.html', error=e)
-
+'''
 
 @app.route('/insert/newfield/', methods=['POST'])
 @login_required
@@ -818,7 +768,7 @@ def addrelationship():
         else:
             row.relationships = str(records['indicator'])
 
-        db_session.commit()
+        db.commit()
 
         # Add Reverse Relationship
         row = Indicator.query.filter_by(object=records['indicator']).first()
@@ -828,7 +778,7 @@ def addrelationship():
         else:
             row.relationships = str(records['id'])
 
-        db_session.commit()
+        db.commit()
 
         if records['type'] == "IPv4" or records['type'] == "IPv6" or records['type'] == "Domain" or \
                 records['type'] == "Network":
@@ -850,7 +800,7 @@ def deletenetworkobject(uid):
         row = Indicator.query.filter(Indicator.indicator == uid).first()
 
         Indicator.query.filter_by(indicator=uid).delete()
-        db_session.commit()
+        db.commit()
 
         if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
             current_indicators = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
@@ -882,7 +832,7 @@ def apiroll():
         print "Time to roll the key!"
         user = User.query.filter_by(user=current_user.user.lower()).first()
         user.apikey = hashlib.md5("{}{}".format(user, str(random.random())).encode('utf-8')).hexdigest()
-        db_session.commit()
+        db.commit()
         return redirect(url_for('profile'))
     except Exception as e:
         return render_template('error.html', error=e)
@@ -900,7 +850,7 @@ def profile():
             if hashlib.md5(records['currentpw'].encode('utf-8')).hexdigest() == user.password:
                 if records['newpw'] == records['newpwvalidation']:
                     user.password = hashlib.md5(records['newpw'].encode('utf-8')).hexdigest()
-                    db_session.commit()
+                    db.commit()
                     errormessage = "Password updated successfully."
                     return render_template('profile.html', errormessage=errormessage)
                 else:
@@ -959,20 +909,7 @@ def about():
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    db_session.remove()
+    db.remove()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-H', '--host', default="127.0.0.1", help="Specify the host IP address")
-    parser.add_argument('-p', '--port', default=8888, help="Specify port to listen on")
-    parser.add_argument('-d', '--debug', default=False, help="Run in debug mode", action="store_true")
-    parser.add_argument('-db', '--database', help="Path to sqlite database - Not Implemented")
-    args = parser.parse_args()
 
-    if args.database:
-        # TODO
-        database.db_file = args.database
-
-    init_db()
-    app.run(host=args.host, port=args.port, debug=args.debug)
