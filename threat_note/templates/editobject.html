@@ -35,14 +35,14 @@
                   <h4 class="title">Edit Indicator</h4>
                 </div>
                 <div class="content">
-                  <form action="/update/object/" enctype="application/x-www-form-urlencoded" method="POST">
+                  <form action="/update/indicator/" enctype="application/x-www-form-urlencoded" method="POST">
                     <div class="row">
                       <div class="col-md-12">
 
                         <fieldset>
                           <div class="form-group">
                             <label>Object</label>
-                            <input type="text" class="form-control" name="object" value="{{ entry['object'] }}" disabled>
+                            <input type="text" class="form-control" name="indicator" value="{{ entry['indicator'] }}" disabled>
                           </div>
 
 
@@ -146,13 +146,13 @@
 
                           <div class="form-group">
                             <label>First Seen</label>
-                            <input type="text" class="form-control" name="firstseen" value="{{ entry['firstseen'] }}" placeholder="09-01-2015">
+                            <input type="text" class="form-control" name="firstseen" value="{{ entry['firstseen'] }}" placeholder="YYYY-MM-DD">
                           </div>
 
 
                           <div class="form-group">
                             <label>Last Seen</label>
-                            <input type="text" class="form-control" name="lastseen" value="{{ entry['lastseen'] }}" placeholder="09-15-2015">
+                            <input type="text" class="form-control" name="lastseen" value="{{ entry['lastseen'] }}" placeholder="{{ currentdate }}">
                           </div>
 
                           <div class="form-group">
@@ -193,7 +193,7 @@
                           </div>
 
 
-                          {% for i in entry %} {% if i == "comments" or i == "type" or i == "campaign" or i == "type" or i == "firstseen" or i == "lastseen" or i == "tags" or i == "object" or i== "relationships" or i == "confidence" or i == "object" or i == "diamondmodel" %}
+                          {% for i in entry %} {% if i == "comments" or i == "type" or i == "campaign" or i == "indicator_type" or i == "firstseen" or i == "lastseen" or i == "tags" or i == "indicator" or i== "relationships" or i == "confidence" or i == "diamondmodel" %}
                           <div></div>
 
                           {% else %} {% if entry[i] == None or entry[i] == ""%}
@@ -213,7 +213,7 @@
                     </div>
 
 
-                    <input type="hidden" class="form-control" name="object" value="{{ entry['object'] }}">
+                    <input type="hidden" class="form-control" name="indicator" value="{{ entry['indicator'] }}">
 
                     <div style="float: right;">
                       {% if entry['type'] == "Threat Actor" %}
