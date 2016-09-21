@@ -22,12 +22,12 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import url_for
-from flask.ext.login import current_user
-from flask.ext.login import login_required
-from flask.ext.login import login_user
-from flask.ext.login import LoginManager
-from flask.ext.login import logout_user
-from flask.ext.wtf import Form
+from flask_login import current_user
+from flask_login import login_required
+from flask_login import login_user
+from flask_login import LoginManager
+from flask_login import logout_user
+from flask_wtf import Form
 from libs import circl
 from libs import cuckoo
 from libs import database
@@ -235,7 +235,7 @@ def networks():
     try:
         # Grab only network indicators
         network = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-        return render_template('networks.html', network=network)
+        return render_template('indicatorlist.html', network=network, title='Network Indicators', links='network')
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -246,7 +246,7 @@ def threatactors():
     try:
         # Grab threat actors
         threatactors = Indicator.query.filter(Indicator.indicator_type == 'Threat Actor').all()
-        return render_template('threatactors.html', network=threatactors)
+        return render_template('indicatorlist.html', network=threatactors, title='Threat Actors', links='threatactors')
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -257,7 +257,7 @@ def victims():
     try:
         # Grab victims
         victims = Indicator.query.filter(Indicator.diamondmodel == ('Victim')).all()
-        return render_template('victims.html', network=victims)
+        return render_template('indicatorlist.html', network=victims, title='Victims', links='victims')
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -268,7 +268,7 @@ def files():
     try:
         # Grab files/hashes
         files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
-        return render_template('files.html', network=files)
+        return render_template('indicatorlist.html', network=files, title='Files & Hashes', links='files')
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -331,7 +331,7 @@ def campaignsummary(uid):
 
 @app.route('/newobject', methods=['GET'])
 @login_required
-def newobj():
+def newindicator():
     try:
         currentdate = time.strftime("%Y-%m-%d")
         return render_template('newobject.html', currentdate=currentdate)
@@ -481,24 +481,23 @@ def newobject():
                                                diamondmodel=records['diamondmodel'],
                                                tags=records['tags'])
 
-            # TODO: Change 'network' to 'indicator' in HTML templates to standardize on verbiage
             if records['inputtype'] == "IPv4" or records['inputtype'] == "Domain" or records['inputtype'] == "Network" \
                 or records['inputtype'] == "IPv6":
                 network = Indicator.query.filter(
                     Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-                return render_template('networks.html', network=network)
+                return render_template('indicatorlist.html', network=network, title='Network Indicators', links='network')
 
             elif records['diamondmodel'] == "Victim":
                 victims = Indicator.query.filter(Indicator.diamondmodel == ('Victim')).all()
-                return render_template('victims.html', network=victims)
+                return render_template('indicatorlist.html', network=victims, title='Victims', links='victims')
 
             elif records['inputtype'] == "Hash":
                 files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
-                return render_template('files.html', network=files)
+                return render_template('indicatorlist.html', network=files, title='Files & Hashes', links='files')
 
             else:
                 threatactors = Indicator.query.filter(Indicator.indicator_type == ('Threat Actors')).all()
-                return render_template('threatactors.html', network=threatactors)
+                return render_template('indicatorlist.html', network=threatactors, title='Threat Actors', links='threatactors')
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -507,9 +506,9 @@ def newobject():
 @login_required
 def editobject(uid):
     try:
-        http = Indicator.query.filter_by(object=uid).first()
+        http = Indicator.query.filter_by(indicator=uid).first()
         newdict = helpers.row_to_dict(http)
-        return render_template('neweditobject.html', entry=newdict)
+        return render_template('editobject.html', entry=newdict)
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -600,7 +599,7 @@ def updatesettings():
         return render_template('error.html', error=e)
 
 
-@app.route('/update/object/', methods=['POST'])
+@app.route('/update/indicator/', methods=['POST'])
 @login_required
 def updateobject():
     try:
@@ -612,7 +611,7 @@ def updateobject():
         # indicator = Indicator.query.filter_by(object=records['object']).first() - Unused
 
         try:
-            Indicator.query.filter_by(object=records['object']).update(records)
+            Indicator.query.filter_by(indicator=records['indicator']).update(records)
         except Exception as e:
             # SQLAlchemy does not outright support altering tables.
             for k, v in records.iteritems():
@@ -660,7 +659,7 @@ def insertnewfield():
                 pass
             else:
                 newdict[i] = records[i]
-        return render_template('neweditobject.html', entry=newdict)
+        return render_template('editobject.html', entry=newdict)
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -668,7 +667,7 @@ def insertnewfield():
 @app.route('/network/<uid>/info', methods=['GET'])
 @app.route('/victims/<uid>/info', methods=['GET'])
 @login_required
-def objectsummary(uid):
+def objectdetails(uid):
     try:
         row = Indicator.query.filter_by(indicator=uid).first()
         records = helpers.row_to_dict(row)
@@ -745,70 +744,43 @@ def objectsummary(uid):
                 shodandata = shodan.shodan(str(row.indicator))
 
         if settings.whoisinfo == "on":
-            if str(row.indicator_type) == "Domain":
-                address = str(whoisdata['city']) + ", " + str(whoisdata['country'])
-            else:
-                address = str(whoisdata['nets'][0]['city']) + ", " + str(
-                    whoisdata['nets'][0]['country'])
+            if whoisdata:
+                if str(row.indicator_type) == "Domain":
+                    address = str(whoisdata['city']) + ", " + str(whoisdata['country'])
+                else:
+                    address = str(whoisdata['nets'][0]['city']) + ", " + str(whoisdata['nets'][0]['country'])
+
         else:
             address = "Information about " + str(row.indicator)
-        return render_template('networkobject.html', **locals())
+        return render_template('indicatordetails.html', **locals())
     except Exception as e:
         return render_template('error.html', error=e)
 
-
-# @app.route('/victims/<uid>/info', methods=['GET'])
-# @login_required
-# def victimobject(uid):
-#    try:
-#        display_info(uid, 'victimobject.html')
-#    except Exception as e:
-#        return render_template('error.html', error=e)
-
-
 @app.route('/threatactors/<uid>/info', methods=['GET'])
+@app.route('/files/<uid>/info', methods=['GET'])
 @login_required
-def threatactorobject(uid):
+def objectdetails1(uid):
     try:
-        row = Indicator.query.filter(Indicator.object == uid).first()
-        newdict = helpers.row_to_dict(row)
+        row = Indicator.query.filter(Indicator.indicator == uid).first()
+        records = helpers.row_to_dict(row)
+        campaign_name = Campaign.query.filter_by(_id=row.campaign_id).first().name
+        records['campaign'] = campaign_name
+        settings = Setting.query.filter_by(_id=1).first()
+        taglist = row.tags.split(",")
 
         temprel = {}
         if row.relationships:
             rellist = row.relationships.split(",")
             for rel in rellist:
-                reltype = Indicator.query.filter(Indicator.object == rel)
-                temprel[reltype.object] = reltype.indicator_type
-
-        reldata = len(temprel)
-        return render_template('threatactorobject.html', records=newdict, temprel=temprel, reldata=reldata)
-    except Exception as e:
-        return render_template('error.html', error=e)
-
-
-@app.route('/files/<uid>/info', methods=['GET'])
-@login_required
-def filesobject(uid):
-    try:
-        http = Indicator.query.filter(Indicator.object == uid).first()
-        newdict = helpers.row_to_dict(http)
-        settings = Setting.query.filter_by(_id=1).first()
-        taglist = http.tags.split(",")
-
-        temprel = {}
-        if http.relationships:
-            rellist = http.relationships.split(",")
-            for rel in rellist:
-                reltype = Indicator.query.filter(Indicator.object == rel).first()
-                temprel[reltype.object] = reltype.indicator_type
+                reltype = Indicator.query.filter(Indicator.indicator == rel).first()
+                temprel[reltype.object] = reltype.type
 
         reldata = len(temprel)
         if settings.vtfile == "on":
-            jsonvt = virustotal.vt_hash_lookup(str(http.object))
+            jsonvt = virustotal.vt_hash_lookup(str(row))
         else:
             jsonvt = ""
-        return render_template('fileobject.html', records=newdict, settingsvars=settings, address=http.object,
-                               temprel=temprel, reldata=reldata, jsonvt=jsonvt, taglist=taglist)
+        return render_template('indicatordetails.html', **locals())
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -873,59 +845,31 @@ def addrelationship():
 
 @app.route('/delete/<uid>', methods=['GET'])
 @login_required
-def deleteobject(uid):
-    try:
-        Indicator.query.filter_by(object=uid).delete()
-        db_session.commit()
-        return redirect(url_for('home'))
-    except Exception as e:
-        return render_template('error.html', error=e)
-
-
-@app.route('/delete/network/<uid>', methods=['GET'])
-@login_required
 def deletenetworkobject(uid):
     try:
-        Indicator.query.filter_by(object=uid).delete()
+        row = Indicator.query.filter(Indicator.indicator == uid).first()
+
+        Indicator.query.filter_by(indicator=uid).delete()
         db_session.commit()
-        network = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-        return render_template('networks.html', network=network)
-    except Exception as e:
-        return render_template('error.html', error=e)
 
+        if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
+            current_indicators = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+            title = 'Network Indicators'
+            links = 'network'
+        elif row.indicator_type == 'Threat Actor':
+            current_indicators = Indicator.query.filter_by(indicator_type='Threat Actor')
+            title = 'Threat Actors'
+            links = 'threatactors'
+        elif row.diamondmodel == 'Victim':
+            current_indicators = Indicator.query.filter_by(diamondmodel='Victim')
+            title = 'Victims'
+            links = 'victims'
+        elif row.indicator_type == 'Hash':
+            current_indicators = Indicator.query.filter_by(indicator_type='Hash')
+            title = 'Files & Hashes'
+            links = 'files'
 
-@app.route('/delete/threatactor/<uid>', methods=['GET'])
-@login_required
-def deletethreatactorobject(uid):
-    try:
-        Indicator.query.filter_by(object=uid).delete()
-        db_session.commit()
-        threatactors = Indicator.query.filter_by(type='Threat Actor')
-        return render_template('threatactors.html', network=threatactors)
-    except Exception as e:
-        return render_template('error.html', error=e)
-
-
-@app.route('/delete/victims/<uid>', methods=['GET'])
-@login_required
-def deletevictimobject(uid):
-    try:
-        Indicator.query.filter_by(object=uid).delete()
-        db_session.commit()
-        victims = Indicator.query.filter_by(diamondmodel='Victim')
-        return render_template('victims.html', network=victims)
-    except Exception as e:
-        return render_template('error.html', error=e)
-
-
-@app.route('/delete/files/<uid>', methods=['GET'])
-@login_required
-def deletefilesobject(uid):
-    try:
-        Indicator.query.filter_by(object=uid).delete()
-        db_session.commit()
-        files = Indicator.query.filter_by(type='Hash')
-        return render_template('victims.html', network=files)
+        return render_template('indicatorlist.html', network=current_indicators, title=title, links=links)
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -966,119 +910,6 @@ def profile():
                 errormessage = "Current password is incorrect."
                 return render_template('profile.html', errormessage=errormessage)
         return render_template('profile.html')
-    except Exception as e:
-        return render_template('error.html', error=e)
-
-
-@app.route('/victims/<uid>/info', methods=['GET'])
-@login_required
-def victimobject(uid):
-    try:
-        http = Indicator.query.filter(Indicator.object == uid).first()
-        newdict = helpers.row_to_dict(http)
-        settings = Setting.query.filter_by(_id=1).first()
-        taglist = http.tags.split(",")
-
-        temprel = {}
-        if http.relationships:
-            rellist = http.relationships.split(",")
-            for rel in rellist:
-                reltype = Indicator.query.filter(Indicator.object == rel)
-                temprel[reltype.object] = reltype.type
-
-        reldata = len(temprel)
-        jsonvt = ""
-        whoisdata = ""
-        odnsdata = ""
-        circldata = ""
-        circlssl = ""
-        pt_pdns_data = ""
-        pt_whois_data = ""
-        pt_pssl_data = ""
-        pt_host_attr_data = ""
-        farsightdata = ""
-        # shodaninfo = ""
-        # Run ipwhois or domainwhois based on the type of indicator
-        if str(http.type) == "IPv4" or str(http.type) == "IPv6":
-            if settings.vtinfo == "on":
-                jsonvt = virustotal.vt_ipv4_lookup(str(http.object))
-            if settings.whoisinfo == "on":
-                whoisdata = whoisinfo.ipwhois(str(http.object))
-            if settings.odnsinfo == "on":
-                odnsdata = opendns.ip_investigate(str(http.object))
-            if settings.circlinfo == "on":
-                circldata = circl.circlquery(str(http.object))
-            if settings.circlssl == "on":
-                circlssl = circl.circlssl(str(http.object))
-            if settings.pt_pdns == "on":
-                pt_pdns_data = passivetotal.pt_lookup('dns', str(http.object))
-            if settings.pt_whois == "on":
-                pt_whois_data = passivetotal.pt_lookup('whois', str(http.object))
-            if settings.pt_pssl == "on":
-                pt_pssl_data = passivetotal.pt_lookup('ssl', str(http.object))
-            if settings.pt_host_attr == "on":
-                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(http.object))
-            if settings.farsightinfo == "on":
-                farsightdata = farsight.farsightip(str(http.object))
-        elif str(http.type) == "Domain":
-            if settings.whoisinfo == "on":
-                whoisdata = whoisinfo.domainwhois(str(http.object))
-            if settings.vtinfo == "on":
-                jsonvt = virustotal.vt_domain_lookup(str(http.object))
-            if settings.odnsinfo == "on":
-                odnsdata = opendns.domains_investigate(
-                    str(http.object))
-            if settings.circlinfo == "on":
-                circldata = circl.circlquery(str(http.object))
-            if settings.pt_pdns == "on":
-                pt_pdns_data = passivetotal.pt_lookup('dns', str(http.object))
-            if settings.pt_whois == "on":
-                pt_whois_data = passivetotal.pt_lookup('whois', str(http.object))
-            if settings.pt_pssl == "on":
-                pt_pssl_data = passivetotal.pt_lookup('ssl', str(http.object))
-            if settings.pt_host_attr == "on":
-                pt_host_attr_data = passivetotal.pt_lookup('attributes', str(http.object))
-        if settings.whoisinfo == "on":
-            if str(http.type) == "Domain":
-                address = str(whoisdata['city']) + ", " + str(
-                    whoisdata['country'])
-            else:
-                address = str(whoisdata['nets'][0]['city']) + ", " + str(
-                    whoisdata['nets'][0]['country'])
-        else:
-            address = "Information about " + str(http.object)
-        return render_template('victimobject.html', records=newdict, jsonvt=jsonvt, whoisdata=whoisdata,
-                               odnsdata=odnsdata, circldata=circldata, circlssl=circlssl, settingsvars=settings,
-                               address=address, temprel=temprel, reldata=reldata, taglist=taglist, farsightdata=farsightdata,
-                               pt_pdns_data=pt_pdns_data, pt_whois_data=pt_whois_data, pt_pssl_data=pt_pssl_data,
-                               pt_host_attr_data=pt_host_attr_data)
-    except Exception as e:
-        return render_template('error.html', error=e)
-
-
-@app.route('/files/<uid>/info', methods=['GET'])
-@login_required
-def filesobject(uid):
-    try:
-        http = Indicator.query.filter(Indicator.object == uid).first()
-        newdict = helpers.row_to_dict(http)
-        settings = Setting.query.filter_by(_id=1).first()
-        taglist = http.tags.split(",")
-
-        temprel = {}
-        if http.relationships:
-            rellist = http.relationships.split(",")
-            for rel in rellist:
-                reltype = Indicator.query.filter(Indicator.object == rel).first()
-                temprel[reltype.object] = reltype.type
-
-        reldata = len(temprel)
-        if settings.vtfile == "on":
-            jsonvt = virustotal.vt_hash_lookup(str(http.object))
-        else:
-            jsonvt = ""
-        return render_template('fileobject.html', records=newdict, settingsvars=settings, address=http.object,
-                               temprel=temprel, reldata=reldata, jsonvt=jsonvt, taglist=taglist)
     except Exception as e:
         return render_template('error.html', error=e)
 
