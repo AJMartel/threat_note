@@ -1,6 +1,6 @@
 import requests
 
-from threat_note.models import Setting
+from app.models import Setting
 
 
 def report_data(cuckoo_task_id):

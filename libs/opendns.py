@@ -1,6 +1,6 @@
 import investigate
 
-from threat_note.models import Setting
+from app.models import Setting
 
 
 def get_odns_apikey():

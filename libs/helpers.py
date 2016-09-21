@@ -1,7 +1,7 @@
 import collections
 import sqlite3 as lite
 
-from models import Setting
+from app.models import Setting
 
 threat_note_types = ['IPv4', 'IPv6', 'Network', 'Domain', 'Hash', 'Entity', 'Threat Actor']
 

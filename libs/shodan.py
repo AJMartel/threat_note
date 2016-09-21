@@ -1,6 +1,8 @@
 import json
+
 import requests
-from models import Setting
+
+from app.models import Setting
 
 
 def shodan(indicator):

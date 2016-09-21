@@ -8,8 +8,8 @@ from flask import abort
 from flask import request
 from flask_restful import Api
 from flask_restful import Resource
-from models import Indicator
-from models import User
+from app.models import Indicator
+from app.models import User
 
 tn_api = Blueprint('tn_api', __name__)
 api = Api(tn_api)

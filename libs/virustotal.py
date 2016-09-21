@@ -3,7 +3,7 @@ import json
 import requests
 
 import helpers
-from threat_note.models import Setting
+from app.models import Setting
 
 # IPv4 VirusTotal function for passive DNS
 def vt_ipv4_lookup(ipv4):

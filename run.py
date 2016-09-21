@@ -8,6 +8,7 @@
 #
 
 import argparse
+import os.path
 from app import app
 
 
@@ -18,5 +19,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', default=False, help="Run in debug mode", action="store_true")
     parser.add_argument('-db', '--database', help="Path to sqlite database - Not Implemented")
     args = parser.parse_args()
+
+    from app import db
+    db.create_all()
 
     app.run(host=args.host, port=args.port, debug=args.debug)
