@@ -1,18 +1,7 @@
 import collections
-import sqlite3 as lite
-
 from app.models import Setting
 
 threat_note_types = ['IPv4', 'IPv6', 'Network', 'Domain', 'Hash', 'Entity', 'Threat Actor']
-
-# db_connection has been replaced with sqlachmey Deprecated, will be removed.
-
-
-def db_connection(db_file='threatnote.db'):
-    con = lite.connect(db_file)
-    con.row_factory = lite.Row
-    return con
-
 
 def row_to_dict(row):
     d = {}
