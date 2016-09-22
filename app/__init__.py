@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-#from libs.API import tn_api
+from libs.API import tn_api
 import os
 
 
@@ -21,10 +21,6 @@ lm = LoginManager()
 lm.init_app(app)
 lm.login_view = 'login'
 
-#app.register_blueprint(tn_api)
+app.register_blueprint(tn_api)
 
 from app import views, models
-
-
-
-
