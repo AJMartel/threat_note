@@ -54,7 +54,7 @@
                       </td>
                       <td>{{ records['indicator_type'] }}</td>
                     </tr>
-                    {% if records['campaign']|length == 0 %}
+                    {% if not records['campaign'] %}
                     <tr>
                       <td>
                         <span class="text-capitalize">Campaign</span>

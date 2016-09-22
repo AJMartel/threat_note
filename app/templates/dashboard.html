@@ -82,10 +82,10 @@
                       <td>{{ p['lastseen'] }}</td>
                     {% endif %}
 
-                    {% if not p['name']%}
+                    {% if not p['campaign']%}
                       <td>-</td>
                     {% else %}
-                      <td>{{ p['name'] }}</td>
+                      <td>{{ p['campaign'].name }}</td>
                     {% endif %}
 
                     {% if p['confidence'] == "Low" %}

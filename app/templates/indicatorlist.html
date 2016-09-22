@@ -55,20 +55,20 @@
                       <tr>
                         <td><a href="/{{links}}/{{ p['indicator'] }}/info">{{ p['indicator'] }}</td>
                                            <td>{{ p['indicator_type'] }}</td>
-                                            {% if p['firstseen']|length == 0 %}
+                                            {% if not p['firstseen'] %}
                                             <td>-</td>
                                             {% else %}
                                             <td>{{ p['firstseen'] }}</td>
                                             {% endif %}
-                                            {% if p['lastseen']|length == 0 %}
+                                            {% if not p['lastseen'] %}
                                             <td>-</td>
                                             {% else %}
                                             <td>{{ p['lastseen'] }}</td>
                                             {% endif %}
-                                            {% if p['campaign']|length == 0 %}
+                                            {% if not p['campaign'] %}
                                             <td>-</td>
                                             {% else %}
-                                            <td>{{ p['campaign'] }}</td>
+                                            <td>{{ p['campaign'].name }}</td>
                                             {% endif %}
                                             {% if p['confidence'] == "Low" %}
                                             <td><i class="fa fa-circle text-warning"></i> {{ p['confidence'] }}</td>
@@ -78,7 +78,7 @@
                                             <td><i class="fa fa-circle text-danger"></i> {{ p['confidence'] }}</td>
                                             {% endif %}
                                             <td>{{ p['diamondmodel'] }}</td>
-                                            {% if p['tags']|length == 0 %}
+                                            {% if not p['tags'] %}
                                             <td>-</td>
                                             {% else %}
                                             <td>{% for tag in p['tags'].split(",") %}
