@@ -124,19 +124,19 @@
                       </td>
                       <td>{{ records['lastseen'] }}</td>
                     </tr>
-                    {% endif %} {% if records['comments']|length == 0 %}
+                    {% endif %} {% if records['notes']|length == 0 %}
                     <tr>
                       <td>
-                        <span class="text-capitalize">Comments</span>
+                        <span class="text-capitalize">Notes</span>
                       </td>
                       <td>-</td>
                     </tr>
                     {% else %}
                     <tr>
                       <td>
-                        <span class="text-capitalize">Comments</span>
+                        <span class="text-capitalize">Notes</span>
                       </td>
-                      <td>{{ records['comments'] }}</td>
+                      <td>{{ records['notes'] }}</td>
                     </tr>
                     {% endif %} {% if records['tags']|length == 0 %}
                     <tr>

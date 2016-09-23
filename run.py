@@ -24,8 +24,10 @@ if __name__ == '__main__':
 
     if args.database:
         database = args.database
-    if not os.path.isfile(os.path.join(os.getcwd(), 'tmp', database)):
+    path = os.path.join(os.getcwd(), 'tmp', database)
+    if os.path.isfile(path):
         from app import db
+        print 'Initializing database'
         db.create_all()
 
     app.run(host=args.host, port=args.port, debug=args.debug)
