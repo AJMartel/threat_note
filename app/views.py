@@ -339,6 +339,8 @@ def newobject():
             db.session.commit()
 
         if 'inputtype' in records:
+            if not records['inputobject']:
+                records['inputobject'] = records['indicator']
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
             # address.
             ipregex = re.match(
@@ -435,9 +437,10 @@ def newobject():
 @login_required
 def editobject(uid):
     try:
-        http = Indicator.query.filter_by(indicator=uid).first()
-        newdict = helpers.row_to_dict(http)
-        return render_template('editobject.html', entry=newdict)
+        row = Indicator.query.filter_by(indicator=uid).first()
+        records = helpers.row_to_dict(row)
+        records['campaign'] = row.campaign.name
+        return render_template('editobject.html', entry=records)
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -613,7 +616,6 @@ def objectdetails(uid):
     try:
         row = Indicator.query.filter_by(indicator=uid).first()
         records = helpers.row_to_dict(row)
-        #campaign_name = Campaign.query.filter_by(_id=row.campaign_id).first().name
         records['campaign'] = row.campaign.name
         settings = Setting.query.filter_by(_id=1).first()
         taglist = row.tags.split(",")
