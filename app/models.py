@@ -129,6 +129,8 @@ class Campaign(db.Model):
     name = db.Column(db.String(150))
     notes = db.Column(db.Text)
     tags = db.Column(db.String(50))
+    #indicator_ids = db.Column(db.Integer, db.ForeignKey('indicator._id'))
+    #indicators = db.relationship('Indicator', backref=db.backref('name', lazy='dynamic'))
     #adversary_id = db.Column(db.Integer, db.ForeignKey("adversaries._id"), nullable=False)
 
     def __init__(self, name, notes, tags):

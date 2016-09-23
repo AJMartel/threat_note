@@ -192,24 +192,16 @@ def files():
 @login_required
 def campaigns():
     try:
-        # Grab campaigns
+        rows = Indicator.query.all()
+
+        # Grab campaigns and match indicators to campaigns
         campaignents = dict()
-        rows = Campaign.query.group_by(Campaign.name).all()
+        ind = {'indicator': '1.1.1.1', 'indicator_type': 'IPv4'}
         for c in rows:
-            if c.campaign == '':
-                name = 'Unknown'
-            else:
-                name = c.campaign
-            campaignents[name] = list()
-        # Match indicators to campaigns
-        for camp, indicators in campaignents.iteritems():
-            if camp == 'Unknown':
-                camp = ''
-            rows = Indicator.query.filter(Indicator.campaign == camp).all()
-            tmp = {}
-            for i in rows:
-                tmp[i.object] = i.indicator_type
-                indicators.append(tmp)
+            if c.campaign.name == '':
+                c.campaign.name = 'Unknown'
+            campaignents[c.campaign.name] = ind
+
         return render_template('campaigns.html', campaignents=campaignents)
     except Exception as e:
         return render_template('error.html', error=e)
@@ -309,7 +301,7 @@ def newobject():
                 # Import IP Indicators from Cuckoo Task
                 for ip in host_data:
                     ip = ip['ip']
-                    ind = Indicator.query.filter_by(object=ip).first()
+                    ind = Indicator.query.filter_by(indicator=ip).first()
                     if ind is None:
                         indicator = Indicator(ip.strip(), 'IPv4', firstseen, '', 'Infrastructure', records['campaign'],
                                               'Low', '', records['tags'], '')
@@ -318,7 +310,7 @@ def newobject():
 
                     # Import Domain Indicators from Cuckoo Task
                     for dns in dns_data:
-                        ind = Indicator.query.filter_by(object=dns['request']).first()
+                        ind = Indicator.query.filter_by(indicator=dns['request']).first()
                         if ind is None:
                             indicator = Indicator(dns['request'], 'Domain', firstseen, '', 'Infrastructure',
                                                   records['campaign'], 'Low', '', records['tags'], '')
@@ -326,7 +318,7 @@ def newobject():
                             db.session.commit()
 
                     # Import File/Hash Indicators from Cuckoo Task
-                    ind = Indicator.query.filter_by(object=sha1).first()
+                    ind = Indicator.query.filter_by(indicator=sha1).first()
                     if ind is None:
                         indicator = Indicator(sha1, 'Hash', firstseen, '', 'Capability',
                                               records['campaign'], 'Low', '', records['tags'], '')
@@ -340,9 +332,9 @@ def newobject():
                 return redirect(url_for('import_indicators'))
 
         # Add the Campaign to the database
-        exists = Campaign.query.filter_by(name=records['inputcampaign']).scalar() is not None
+        exists = Campaign.query.filter_by(name=records['inputcampaign']).all() is not None
         camp = Campaign(name=records['inputcampaign'], notes='', tags=records['tags'])
-        if exists:
+        if not exists:
             db.session.add(camp)
             db.session.commit()
 
@@ -420,19 +412,21 @@ def newobject():
                 or records['inputtype'] == "IPv6":
                 network = Indicator.query.filter(
                     Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-                return render_template('indicatorlist.html', network=network, title='Network Indicators', links='network')
+                return render_template(
+                    'indicatorlist.html', network=network, title='Network Indicators', links='network')
 
             elif records['diamondmodel'] == "Victim":
-                victims = Indicator.query.filter(Indicator.diamondmodel == ('Victim')).all()
+                victims = Indicator.query.filter(Indicator.diamondmodel == 'Victim').all()
                 return render_template('indicatorlist.html', network=victims, title='Victims', links='victims')
 
             elif records['inputtype'] == "Hash":
-                files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
+                files = Indicator.query.filter(Indicator.indicator_type == 'Hash').all()
                 return render_template('indicatorlist.html', network=files, title='Files & Hashes', links='files')
 
             else:
-                threatactors = Indicator.query.filter(Indicator.indicator_type == ('Threat Actors')).all()
-                return render_template('indicatorlist.html', network=threatactors, title='Threat Actors', links='threatactors')
+                threatactors = Indicator.query.filter(Indicator.indicator_type == 'Threat Actor').all()
+                return render_template(
+                    'indicatorlist.html', network=threatactors, title='Threat Actors', links='threatactors')
     except Exception as e:
         return render_template('error.html', error=e)
 

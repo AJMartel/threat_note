@@ -163,7 +163,7 @@
           <div class="card ">
             <div class="header">
               <h4 class="title">Indicator indicator_type</h4>
-              <p class="category">Breakdown of Indicators by indicator_type</p>
+              <p class="category">Breakdown of Indicators by Type</p>
             </div>
             <div class="content">
               <div id="chartActivity" class="ct-chart"></div>
@@ -217,10 +217,10 @@ new Chartist.Pie('#chart1', data, options, responsiveOptions);
 
 <script>
 new Chartist.Bar('#chartActivity', {
-  labels: [ {% for i in indicator_typelist %}
+  labels: [ {% for i in typelist %}
           "{{ i['category'] }}",
           {% endfor %}],
-  series: [{% for i in indicator_typelist %}
+  series: [{% for i in typelist %}
           "{{ i['value'] }}",
           {% endfor %}]
 }, {
