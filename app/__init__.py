@@ -10,7 +10,7 @@ import os
 #
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yek_terces'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'tmp', 'test.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'tmp', 'threatnote.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.debug = True
 app.template_debug = True

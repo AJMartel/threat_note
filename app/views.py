@@ -286,6 +286,7 @@ def addattack():
         print 'error adding attack'
         exit()
 
+
 @app.route('/update/indicator/', methods=['POST'])
 @app.route('/insert/object/', methods=['POST'])
 @login_required
@@ -339,7 +340,7 @@ def newobject():
             db.session.commit()
 
         if 'inputtype' in records:
-            if not records['inputobject']:
+            if 'inputobject' not in records:
                 records['inputobject'] = records['indicator']
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
             # address.
