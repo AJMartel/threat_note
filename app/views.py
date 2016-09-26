@@ -349,23 +349,32 @@ def newobject():
             # Convert the inputobject of IP or Domain to a list for Bulk Add functionality.
             records['inputobject'] = records['inputobject'].split(',')
             for newobject in records['inputobject']:
-                if records['inputtype'] == "IPv4":
-                    if ipregex:
-                        indicator = Indicator.query.filter_by(indicator=newobject).first()
-                        if indicator is None:
-                            ipv4_indicator = Indicator(indicator=newobject.strip(), campaign=camp,
-                                                       indicator_type=records['inputtype'],
-                                                       firstseen=records['inputfirstseen'],
-                                                       lastseen=records['inputlastseen'],
-                                                       diamondmodel=records['diamondmodel'],
-                                                       confidence=records['confidence'],
-                                                       notes=records['comments'],
-                                                       tags=records['tags'],
-                                                       relationships=None)
-                            db.session.add(ipv4_indicator)
+                if ipregex and records['inputtype'] == "IPv4":
+                    indicator = Indicator.query.filter_by(indicator=newobject).first()
+                    if indicator is None:
+                        ipv4_indicator = Indicator(indicator=newobject.strip(), campaign=camp,
+                                                   indicator_type=records['inputtype'],
+                                                   firstseen=records['inputfirstseen'],
+                                                   lastseen=records['inputlastseen'],
+                                                   diamondmodel=records['diamondmodel'],
+                                                   confidence=records['confidence'],
+                                                   notes=records['comments'],
+                                                   tags=records['tags'],
+                                                   relationships=None)
+                        db.session.add(ipv4_indicator)
+                        db.session.commit()
+                    else:
+                        rule = request.url_rule
+                        if 'update' in rule.rule:
+                            indicator.campaign.name = records['inputcampaign']
+                            indicator.indicator_type = records['inputtype']
+                            indicator.firstseen = records['inputfirstseen']
+                            indicator.lastseen = records['inputlastseen']
+                            indicator.diamondmodel = records['diamondmodel']
+                            indicator.confidence = records['confidence']
+                            indicator.notes = records['comments']
+                            indicator.tags = records['tags']
                             db.session.commit()
-                            # network = Indicator.query.filter(Indicator.indicator_type.in_(
-                            #    ('IPv4', 'IPv6', 'Domain', 'Network'))).all()
                         else:
                             errormessage = "Entry already exists in database."
                             return render_template('newobject.html', errormessage=errormessage,
@@ -377,39 +386,39 @@ def newobject():
                                                    diamondmodel=records['diamondmodel'],
                                                    tags=records['tags'])
 
-                    else:
-                        errormessage = "Not a valid IP Address."
-                        return render_template('newobject.html', errormessage=errormessage,
-                                               inputtype=records['inputtype'],
-                                               inputobject=newobject, inputfirstseen=records['inputfirstseen'],
-                                               inputlastseen=records['inputlastseen'],
-                                               confidence=records['confidence'], inputcampaign=records['inputcampaign'],
-                                               comments=records['comments'], diamondmodel=records['diamondmodel'],
-                                               tags=records['tags'])
                 else:
-                    indicator = Indicator.query.filter_by(indicator=newobject).first()
-                    if indicator is None:
-                        indicator = Indicator(indicator=newobject.strip(), campaign=camp,
-                                              indicator_type=records['inputtype'],
-                                              firstseen=records['inputfirstseen'],
-                                              lastseen=records['inputlastseen'],
-                                              diamondmodel=records['diamondmodel'],
-                                              confidence=records['confidence'],
-                                              notes=records['comments'],
-                                              tags=records['tags'],
-                                              relationships=None)
-                        db.session.add(indicator)
-                        db.session.commit()
-                    else:
-                        errormessage = "Entry already exists in database."
-                        return render_template('newobject.html', errormessage=errormessage,
-                                               inputtype=records['inputtype'], inputobject=newobject,
-                                               inputfirstseen=records['inputfirstseen'],
-                                               inputlastseen=records['inputlastseen'],
-                                               inputcampaign=records['inputcampaign'],
-                                               comments=records['comments'],
-                                               diamondmodel=records['diamondmodel'],
-                                               tags=records['tags'])
+                    errormessage = "Not a valid IP Address."
+                    return render_template('newobject.html', errormessage=errormessage,
+                                           inputtype=records['inputtype'],
+                                           inputobject=newobject, inputfirstseen=records['inputfirstseen'],
+                                           inputlastseen=records['inputlastseen'],
+                                           confidence=records['confidence'], inputcampaign=records['inputcampaign'],
+                                           comments=records['comments'], diamondmodel=records['diamondmodel'],
+                                           tags=records['tags'])
+            else:
+                indicator = Indicator.query.filter_by(indicator=newobject).first()
+                if indicator is None:
+                    indicator = Indicator(indicator=newobject.strip(), campaign=camp,
+                                          indicator_type=records['inputtype'],
+                                          firstseen=records['inputfirstseen'],
+                                          lastseen=records['inputlastseen'],
+                                          diamondmodel=records['diamondmodel'],
+                                          confidence=records['confidence'],
+                                          notes=records['comments'],
+                                          tags=records['tags'],
+                                          relationships=None)
+                    db.session.add(indicator)
+                    db.session.commit()
+                else:
+                    errormessage = "Entry already exists in database."
+                    return render_template('newobject.html', errormessage=errormessage,
+                                           inputtype=records['inputtype'], inputobject=newobject,
+                                           inputfirstseen=records['inputfirstseen'],
+                                           inputlastseen=records['inputlastseen'],
+                                           inputcampaign=records['inputcampaign'],
+                                           comments=records['comments'],
+                                           diamondmodel=records['diamondmodel'],
+                                           tags=records['tags'])
 
             if records['inputtype'] == "IPv4" or records['inputtype'] == "Domain" or records['inputtype'] == "Network" \
                 or records['inputtype'] == "IPv6":
@@ -438,10 +447,11 @@ def newobject():
 @login_required
 def editobject(uid):
     try:
+        currentdate = time.strftime("%Y-%m-%d")
         row = Indicator.query.filter_by(indicator=uid).first()
         records = helpers.row_to_dict(row)
         records['campaign'] = row.campaign.name
-        return render_template('editobject.html', entry=records)
+        return render_template('editobject.html', entry=records, currentdate=currentdate)
     except Exception as e:
         return render_template('error.html', error=e)
 

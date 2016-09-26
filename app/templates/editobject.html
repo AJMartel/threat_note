@@ -146,13 +146,13 @@
 
                           <div class="form-group">
                             <label>First Seen</label>
-                            <input type="text" class="form-control" name="firstseen" value="{{ entry['firstseen'] }}" placeholder="YYYY-MM-DD">
+                            <input type="text" class="form-control" name="inputfirstseen" value="{{ entry['inputfirstseen'] }}" placeholder="YYYY-MM-DD">
                           </div>
 
 
                           <div class="form-group">
                             <label>Last Seen</label>
-                            <input type="text" class="form-control" name="lastseen" value="{{ entry['lastseen'] }}" placeholder="{{ currentdate }}">
+                            <input type="text" class="form-control" name="inputlastseen" value="{{ entry['inputlastseen'] }}" placeholder="{{ currentdate }}">
                           </div>
 
                           <div class="form-group">
@@ -193,7 +193,7 @@
                           </div>
 
 
-                          {% for i in entry %} {% if i == "comments" or i == "type" or i == "campaign" or i == "indicator_type" or i == "firstseen" or i == "lastseen" or i == "tags" or i == "indicator" or i== "relationships" or i == "confidence" or i == "diamondmodel" %}
+                          {% for i in entry %} {% if i == "comments" or i == "type" or i == "campaign" or i == "indicator_type" or i == "inputfirstseen" or i == "inputlastseen" or i == "tags" or i == "indicator" or i== "relationships" or i == "confidence" or i == "diamondmodel" %}
                           <div></div>
 
                           {% else %} {% if entry[i] == None or entry[i] == ""%}
