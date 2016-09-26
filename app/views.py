@@ -287,7 +287,7 @@ def addattack():
         exit()
 
 
-@app.route('/update/indicator/', methods=['POST'])
+@app.route('/update/object/', methods=['POST'])
 @app.route('/insert/object/', methods=['POST'])
 @login_required
 def newobject():
@@ -341,7 +341,7 @@ def newobject():
 
         if 'inputtype' in records:
             # Hack for dealing with disabled fields not being sent in request.form
-            # A hidden feild is used to send the indicator 
+            # A hidden feild is used to send the indicator
             if 'inputobject' not in records:
                 records['inputobject'] = records['indicator']
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
