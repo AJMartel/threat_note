@@ -1,4 +1,4 @@
-from models import Setting
+from app.models import Setting
 
 
 def _generate_request_instance(request_type):

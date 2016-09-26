@@ -70,22 +70,22 @@
 
                     <td>{{ p['indicator_type'] }}</td>
 
-                    {% if p['firstseen']|length == 0 %}
+                    {% if not p['firstseen'] %}
                       <td>-</td>
                     {% else %}
                       <td>{{ p['firstseen'] }}</td>
                     {% endif %}
 
-                    {% if p['lastseen']|length == 0 %}
+                    {% if not p['lastseen'] %}
                       <td>-</td>
                     {% else %}
                       <td>{{ p['lastseen'] }}</td>
                     {% endif %}
 
-                    {% if p['campaign']|length == 0 %}
+                    {% if not p['campaign']%}
                       <td>-</td>
                     {% else %}
-                      <td>{{ p['campaign'] }}</td>
+                      <td>{{ p['campaign'].name }}</td>
                     {% endif %}
 
                     {% if p['confidence'] == "Low" %}
@@ -163,7 +163,7 @@
           <div class="card ">
             <div class="header">
               <h4 class="title">Indicator indicator_type</h4>
-              <p class="category">Breakdown of Indicators by indicator_type</p>
+              <p class="category">Breakdown of Indicators by Type</p>
             </div>
             <div class="content">
               <div id="chartActivity" class="ct-chart"></div>
@@ -217,10 +217,10 @@ new Chartist.Pie('#chart1', data, options, responsiveOptions);
 
 <script>
 new Chartist.Bar('#chartActivity', {
-  labels: [ {% for i in indicator_typelist %}
+  labels: [ {% for i in typelist %}
           "{{ i['category'] }}",
           {% endfor %}],
-  series: [{% for i in indicator_typelist %}
+  series: [{% for i in typelist %}
           "{{ i['value'] }}",
           {% endfor %}]
 }, {

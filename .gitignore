@@ -1,17 +1,5 @@
-
 .idea/*
-
-#Exclude python autosave and complied files
 *.pyc
-*.py~
-
-vagrant/.vagrant/*
-
-.DS_Store
-!static/uploads
-static/uploads/*
-
 *.db
-
-# Common VirtualEnv Path
-venv*
+*.DS_Store
+venv/*

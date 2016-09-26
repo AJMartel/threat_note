@@ -1,5 +1,6 @@
 import investigate
-from models import Setting
+
+from app.models import Setting
 
 
 def get_odns_apikey():

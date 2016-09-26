@@ -1,9 +1,9 @@
 import datetime
 import json
 
-import helpers
 import requests
-from models import Setting
+
+from app.models import Setting
 
 
 def circlquery(indicator):

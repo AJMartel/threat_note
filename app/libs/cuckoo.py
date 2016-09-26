@@ -1,5 +1,6 @@
 import requests
-from models import Setting
+
+from app.models import Setting
 
 
 def report_data(cuckoo_task_id):
