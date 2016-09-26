@@ -31,9 +31,11 @@ from app import app, db, lm
 from .forms import LoginForm, RegisterForm
 from .models import User, Indicator, Campaign, Setting
 
+
 @lm.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -91,7 +93,6 @@ def home():
         network = Indicator.query.order_by(Indicator.indicator.desc()).limit(5).all()
         campaigns = Campaign.query.group_by(Campaign.name).all()
         taglist = Indicator.query.distinct(Indicator.tags).all()
-
 
         # Generate Tag Cloud
         tags = set()
@@ -207,7 +208,6 @@ def campaigns():
         return render_template('error.html', error=e)
 
 
-
 @app.route('/tags', methods=['GET'])
 @login_required
 def tags():
@@ -252,8 +252,8 @@ def campaignsummary(uid):
         http = Indicator.query.filter_by(object=uid).first()
         # Run ipwhois or domainwhois based on the type of indicator
         if str(http.indicator_type) == "IPv4" or str(http.indicator_type) == "IPv6" or str(
-            http.indicator_type) == "Domain" or \
-                str(http.indicator_type) == "Network":
+                http.indicator_type) == "Domain" or \
+                        str(http.indicator_type) == "Network":
             return redirect(url_for('objectsummary', uid=http.object))
         elif str(http.indicator_type) == "Hash":
             return redirect(url_for('filesobject', uid=http.object))
@@ -279,9 +279,9 @@ def addattack():
     try:
         imd = ImmutableMultiDict(request.form)
         inputs = helpers.convert(imd)
-        #attack = Attack(1, 'desc', 'note', None)
-        #db.session.add(attack)
-        #db.session.commit()
+        # attack = Attack(1, 'desc', 'note', None)
+        # db.session.add(attack)
+        # db.session.commit()
     except:
         print 'error adding attack'
         exit()
@@ -340,6 +340,8 @@ def newobject():
             db.session.commit()
 
         if 'inputtype' in records:
+            # Hack for dealing with disabled fields not being sent in request.form
+            # A hidden feild is used to send the indicator 
             if 'inputobject' not in records:
                 records['inputobject'] = records['indicator']
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
@@ -348,22 +350,29 @@ def newobject():
                 r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', records['inputobject'])
             # Convert the inputobject of IP or Domain to a list for Bulk Add functionality.
             records['inputobject'] = records['inputobject'].split(',')
+            errormessage=None
             for newobject in records['inputobject']:
-                if ipregex and records['inputtype'] == "IPv4":
-                    indicator = Indicator.query.filter_by(indicator=newobject).first()
-                    if indicator is None:
-                        ipv4_indicator = Indicator(indicator=newobject.strip(), campaign=camp,
-                                                   indicator_type=records['inputtype'],
-                                                   firstseen=records['inputfirstseen'],
-                                                   lastseen=records['inputlastseen'],
-                                                   diamondmodel=records['diamondmodel'],
-                                                   confidence=records['confidence'],
-                                                   notes=records['comments'],
-                                                   tags=records['tags'],
-                                                   relationships=None)
-                        db.session.add(ipv4_indicator)
-                        db.session.commit()
+                indicator = Indicator.query.filter_by(indicator=newobject).first()
+                if indicator is None:
+                    newindicator = Indicator(indicator=newobject.strip(), campaign=camp,
+                                             indicator_type=records['inputtype'],
+                                             firstseen=records['inputfirstseen'],
+                                             lastseen=records['inputlastseen'],
+                                             diamondmodel=records['diamondmodel'],
+                                             confidence=records['confidence'],
+                                             notes=records['comments'],
+                                             tags=records['tags'],
+                                             relationships=None)
+                    if newindicator:
+                        # Validates that the indicator is an IPv4
+                        if not ipregex and records['inputtype'] == "IPv4":
+                            errormessage = "Not a valid IP Address."
+                        else:
+                            db.session.add(newindicator)
+                            db.session.commit()
                     else:
+                        # Check to see if the app route was Update
+                        # preform an update instead of adding a new indicator
                         rule = request.url_rule
                         if 'update' in rule.rule:
                             indicator.campaign.name = records['inputcampaign']
@@ -377,40 +386,8 @@ def newobject():
                             db.session.commit()
                         else:
                             errormessage = "Entry already exists in database."
-                            return render_template('newobject.html', errormessage=errormessage,
-                                                   inputtype=records['inputtype'], inputobject=newobject,
-                                                   inputfirstseen=records['inputfirstseen'],
-                                                   inputlastseen=records['inputlastseen'],
-                                                   inputcampaign=records['inputcampaign'],
-                                                   comments=records['comments'],
-                                                   diamondmodel=records['diamondmodel'],
-                                                   tags=records['tags'])
 
-                else:
-                    errormessage = "Not a valid IP Address."
-                    return render_template('newobject.html', errormessage=errormessage,
-                                           inputtype=records['inputtype'],
-                                           inputobject=newobject, inputfirstseen=records['inputfirstseen'],
-                                           inputlastseen=records['inputlastseen'],
-                                           confidence=records['confidence'], inputcampaign=records['inputcampaign'],
-                                           comments=records['comments'], diamondmodel=records['diamondmodel'],
-                                           tags=records['tags'])
-            else:
-                indicator = Indicator.query.filter_by(indicator=newobject).first()
-                if indicator is None:
-                    indicator = Indicator(indicator=newobject.strip(), campaign=camp,
-                                          indicator_type=records['inputtype'],
-                                          firstseen=records['inputfirstseen'],
-                                          lastseen=records['inputlastseen'],
-                                          diamondmodel=records['diamondmodel'],
-                                          confidence=records['confidence'],
-                                          notes=records['comments'],
-                                          tags=records['tags'],
-                                          relationships=None)
-                    db.session.add(indicator)
-                    db.session.commit()
-                else:
-                    errormessage = "Entry already exists in database."
+                if errormessage:
                     return render_template('newobject.html', errormessage=errormessage,
                                            inputtype=records['inputtype'], inputobject=newobject,
                                            inputfirstseen=records['inputfirstseen'],
@@ -421,11 +398,11 @@ def newobject():
                                            tags=records['tags'])
 
             if records['inputtype'] == "IPv4" or records['inputtype'] == "Domain" or records['inputtype'] == "Network" \
-                or records['inputtype'] == "IPv6":
+                    or records['inputtype'] == "IPv6":
                 network = Indicator.query.filter(
                     Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-                return render_template(
-                    'indicatorlist.html', network=network, title='Network Indicators', links='network')
+                return render_template('indicatorlist.html', network=network, title='Network Indicators',
+                                       links='network')
 
             elif records['diamondmodel'] == "Victim":
                 victims = Indicator.query.filter(Indicator.diamondmodel == 'Victim').all()
@@ -541,6 +518,7 @@ def updatesettings():
     except Exception as e:
         return render_template('error.html', error=e)
 
+
 '''
 @app.route('/update/indicator/', methods=['POST'])
 @login_required
@@ -599,6 +577,7 @@ def updateobject():
     except Exception as e:
         return render_template('error.html', error=e)
 '''
+
 
 @app.route('/insert/newfield/', methods=['POST'])
 @login_required
@@ -711,6 +690,7 @@ def objectdetails(uid):
     except Exception as e:
         return render_template('error.html', error=e)
 
+
 @app.route('/threatactors/<uid>/info', methods=['GET'])
 @app.route('/files/<uid>/info', methods=['GET'])
 @login_required
@@ -786,7 +766,7 @@ def addrelationship():
         db.session.commit()
 
         if records['type'] == "IPv4" or records['type'] == "IPv6" or records['type'] == "Domain" or \
-                records['type'] == "Network":
+                        records['type'] == "Network":
             return redirect(url_for('objectsummary', uid=str(records['id'])))
         elif records['type'] == "Hash":
             return redirect(url_for('filesobject', uid=str(records['id'])))
@@ -808,7 +788,8 @@ def deletenetworkobject(uid):
         db.session.commit()
 
         if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
-            current_indicators = Indicator.query.filter(Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+            current_indicators = Indicator.query.filter(
+                Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
             title = 'Network Indicators'
             links = 'network'
         elif row.indicator_type == 'Threat Actor':
