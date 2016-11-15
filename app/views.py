@@ -788,12 +788,16 @@ def deletenetworkobject(uid):
         row = Indicator.query.filter(Indicator.indicator == uid).first()
         if not row:
             Campaign.query.filter_by(name=uid).delete()
+            db.session.commit()
             return redirect(url_for('campaigns'))
 
         else:
-            counts = Indicator.query.filter(Campaign.name == uid).count()
+            # TODO: Check if indicator is last in campaign and delete
+            indicator_count = Indicator.query.distinct(Indicator.indicator).filter(Campaign.name == row.campaign.name).count()
+            if indicator_count <= 1:
+                Campaign.query.filter_by(name=row.campaign.name).delete()
             Indicator.query.filter_by(indicator=uid).delete()
-
+            db.session.commit()
 
             if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
                 current_indicators = Indicator.query.filter(
@@ -812,7 +816,6 @@ def deletenetworkobject(uid):
                 current_indicators = Indicator.query.filter_by(indicator_type='Hash')
                 title = 'Files & Hashes'
                 links = 'files'
-        db.session.commit()
 
         return render_template('indicatorlist.html', network=current_indicators, title=title, links=links)
     except Exception as e:
