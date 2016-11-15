@@ -121,7 +121,7 @@ def home():
                     tempx = (float(c) / float(counts)) * 100
                     dictcount["value"] = round(tempx, 2)
             except ZeroDivisionError:
-                # Do not render a pi chart
+                # Do not render the pi chart
                 pass
 
             dictlist.append(dictcount.copy())
@@ -197,15 +197,14 @@ def files():
 @login_required
 def campaigns():
     try:
-        rows = Indicator.query.all()
-
+        rows = Campaign.query.group_by(Campaign.name).all()
         # Grab campaigns and match indicators to campaigns
         campaignents = dict()
         ind = {'indicator': '1.1.1.1', 'indicator_type': 'IPv4'}
         for c in rows:
-            if c.campaign.name == '':
-                c.campaign.name = 'Unknown'
-            campaignents[c.campaign.name] = ind
+            if c.name == '':
+                c.name = 'Unknown'
+            campaignents[c.name] = ind
 
         return render_template('campaigns.html', campaignents=campaignents)
     except Exception as e:
@@ -787,27 +786,31 @@ def addrelationship():
 def deletenetworkobject(uid):
     try:
         row = Indicator.query.filter(Indicator.indicator == uid).first()
+        if not row:
+            Campaign.query.filter_by(name=uid).delete()
+            return redirect(url_for('campaigns'))
 
-        Indicator.query.filter_by(indicator=uid).delete()
+        else:
+            Indicator.query.filter_by(indicator=uid).delete()
+
+            if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
+                current_indicators = Indicator.query.filter(
+                    Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+                title = 'Network Indicators'
+                links = 'network'
+            elif row.indicator_type == 'Threat Actor':
+                current_indicators = Indicator.query.filter_by(indicator_type='Threat Actor')
+                title = 'Threat Actors'
+                links = 'threatactors'
+            elif row.diamondmodel == 'Victim':
+                current_indicators = Indicator.query.filter_by(diamondmodel='Victim')
+                title = 'Victims'
+                links = 'victims'
+            elif row.indicator_type == 'Hash':
+                current_indicators = Indicator.query.filter_by(indicator_type='Hash')
+                title = 'Files & Hashes'
+                links = 'files'
         db.session.commit()
-
-        if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
-            current_indicators = Indicator.query.filter(
-                Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-            title = 'Network Indicators'
-            links = 'network'
-        elif row.indicator_type == 'Threat Actor':
-            current_indicators = Indicator.query.filter_by(indicator_type='Threat Actor')
-            title = 'Threat Actors'
-            links = 'threatactors'
-        elif row.diamondmodel == 'Victim':
-            current_indicators = Indicator.query.filter_by(diamondmodel='Victim')
-            title = 'Victims'
-            links = 'victims'
-        elif row.indicator_type == 'Hash':
-            current_indicators = Indicator.query.filter_by(indicator_type='Hash')
-            title = 'Files & Hashes'
-            links = 'files'
 
         return render_template('indicatorlist.html', network=current_indicators, title=title, links=links)
     except Exception as e:
