@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# threat_note v3.0                                      #
+# threat_note v4.0                                      #
 # Developed By: Brian Warehime                          #
 # Defense Point Security (defpoint.com)                 #
 # October 26, 2015                                      #

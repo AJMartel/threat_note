@@ -792,7 +792,6 @@ def deletenetworkobject(uid):
             return redirect(url_for('campaigns'))
 
         else:
-            # TODO: Check if indicator is last in campaign and delete
             indicator_count = Indicator.query.distinct(Indicator.indicator).filter(Campaign.name == row.campaign.name).count()
             if indicator_count <= 1:
                 Campaign.query.filter_by(name=row.campaign.name).delete()
