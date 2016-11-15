@@ -111,14 +111,18 @@ def home():
         # Generate Campaign Statistics Graph
         for campaign in campaigns:
             c = Indicator.query.filter_by(campaign_id=campaign.get_id()).count()
-            if campaign.name == '':
-                dictcount["category"] = "Unknown"
-                tempx = (float(c) / float(counts)) * 100
-                dictcount["value"] = round(tempx, 2)
-            else:
-                dictcount["category"] = campaign.name
-                tempx = (float(c) / float(counts)) * 100
-                dictcount["value"] = round(tempx, 2)
+            try:
+                if campaign.name == '':
+                    dictcount["category"] = "Unknown"
+                    tempx = (float(c) / float(counts)) * 100
+                    dictcount["value"] = round(tempx, 2)
+                else:
+                    dictcount["category"] = campaign.name
+                    tempx = (float(c) / float(counts)) * 100
+                    dictcount["value"] = round(tempx, 2)
+            except ZeroDivisionError:
+                # Do not render a pi chart
+                pass
 
             dictlist.append(dictcount.copy())
 
