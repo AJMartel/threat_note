@@ -791,7 +791,9 @@ def deletenetworkobject(uid):
             return redirect(url_for('campaigns'))
 
         else:
+            counts = Indicator.query.filter(Campaign.name == uid).count()
             Indicator.query.filter_by(indicator=uid).delete()
+
 
             if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
                 current_indicators = Indicator.query.filter(
