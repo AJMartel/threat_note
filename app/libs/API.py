@@ -1,7 +1,6 @@
 import urllib
-
 import helpers
-from database import db_session
+from app import db
 # V2 Flask-Restful Version
 from flask import Blueprint
 from flask import abort
@@ -59,8 +58,8 @@ class Indicators(Resource):
                 data['comments'],
                 data['tags'],
                 None)
-            db_session.add(indicator)
-            db_session.commit()
+            db.session.add(indicator)
+            db.session.commit()
 
             indicators = Indicator.query.filter(Indicator.object == data['object']).first()
             return {'indicator': helpers.row_to_dict(indicators)}, 201
@@ -191,7 +190,7 @@ class Relationships(Resource):
             else:
                 src_row.relationships = str(dst)
 
-            db_session.commit()
+            db.session.commit()
 
             # Add Reverse Relationship
             dst_row = Indicator.query.filter_by(object=dst).first()
@@ -201,7 +200,7 @@ class Relationships(Resource):
             else:
                 dst_row.relationships = str(src)
 
-            db_session.commit()
+            db.session.commit()
 
             return {'result': 'true', 'source': helpers.row_to_dict(src_row), 'destination': helpers.row_to_dict(dst_row)}, 201
         except:

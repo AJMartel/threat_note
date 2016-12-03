@@ -19,5 +19,5 @@ lm.init_app(app)
 lm.login_view = 'login'
 
 from app import views, models
-#from libs.API import tn_api
-#app.register_blueprint(tn_api)
+from libs.API import tn_api
+app.register_blueprint(tn_api)
