@@ -9,7 +9,6 @@ from flask_login import LoginManager
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yek_terces'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + '../threatnote-test.db'
 app.debug = True
 app.template_debug = True
 
