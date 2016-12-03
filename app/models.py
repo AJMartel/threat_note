@@ -2,6 +2,7 @@ import hashlib
 import random
 from app import db
 
+
 class User(db.Model):
     _id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user = db.Column(db.String)

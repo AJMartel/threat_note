@@ -25,8 +25,10 @@ if __name__ == '__main__':
     else:
         path = os.path.join(args.database)
 
+    print path
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + path
+
     if not os.path.isfile(path):
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + path
         from app import db
         print 'Initializing database'
         db.create_all()

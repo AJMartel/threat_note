@@ -25,7 +25,7 @@ from libs import opendns
 from libs import passivetotal
 from libs import shodan
 from libs import virustotal
-from libs import whoisinfo
+#from libs import whoisinfo
 
 from app import app, db, lm
 from .forms import LoginForm, RegisterForm
