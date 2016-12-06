@@ -187,7 +187,7 @@ def victims():
 def files():
     try:
         # Grab files/hashes
-        files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
+        files = Indicator.query.filter(Indicator.indicator_type == 'Hash').all()
         return render_template('indicatorlist.html', network=files, title='Files & Hashes', links='files')
     except Exception as e:
         return render_template('error.html', error=e)
@@ -200,11 +200,13 @@ def campaigns():
         rows = Campaign.query.group_by(Campaign.name).all()
         # Grab campaigns and match indicators to campaigns
         campaignents = dict()
-        ind = {'indicator': '1.1.1.1', 'indicator_type': 'IPv4'}
-        for c in rows:
-            if c.name == '':
-                c.name = 'Unknown'
-            campaignents[c.name] = ind
+        for row in rows:
+            ind = Indicator.query.filter().all()
+            for i in ind:
+                a = i.campaign
+            if row.name == '':
+                row.name = 'Unknown'
+            campaignents[row.name] = ind
 
         return render_template('campaigns.html', campaigns=campaignents)
     except Exception as e:

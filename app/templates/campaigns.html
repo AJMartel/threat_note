@@ -57,10 +57,8 @@
                   <th>Indicator</th>
                 </thead>
                 <tbody>
-                  {% for ind,v in indicators.iteritems() %}
+                  {% for ind in indicators %}
                   <tr>
-                    {{ ind }}
-                    {{ v }}
                     {% if ind['indicator_type'] == "IPv4" or ind['indicator_type'] == "IPv6" or ind['indicator_type'] == "Domain" or ind['indicator_type'] == "Network" %}
                     <td><a href="/network/{{ ind['indicator'] }}/info">{{ ind['indicator'] }}</a></td>
                     {% elif ind['indicator_type'] == "Threat Actor" %}
