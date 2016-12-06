@@ -206,7 +206,7 @@ def campaigns():
                 c.name = 'Unknown'
             campaignents[c.name] = ind
 
-        return render_template('campaigns.html', campaignents=campaignents)
+        return render_template('campaigns.html', campaigns=campaignents)
     except Exception as e:
         return render_template('error.html', error=e)
 
