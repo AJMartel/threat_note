@@ -30,23 +30,25 @@
           </div>
         </div>
       </div>
-      {% for campaign in campaignents %}
+      {% for campaign_name, indicators in campaigns.iteritems() %}
       <div class="row">
         <div class="col-md-6 col-md-offset-3">
           <div class="card">
             <div class="header">
-              {% if campaign == "" %}
+              {% if campaign_name == "" %}
               <div style="float: right;">
                 <a href="/download/unknown" class="btn btn-info btn-fill"><i class="fa fa-plus"></i> Download Indicators</a>
               </div>
               <h4 class="title"><i class="pe-7s-shield"></i> Unknown</h4>
               {% else %}
-              <div style="float: right;"><a href="/download/{{ campaign }}" class="btn btn-info btn-fill"><i class="fa fa-plus"></i> Download Indicators</a>
+              <div style="float: right;"><a href="/download/{{ campaign_name }}" class="btn btn-info btn-fill"><i class="fa fa-plus"></i> Download Indicators</a>
+              <a href="/delete/{{ campaign_name }}" role="button" rel="tooltip" title="Remove" class="btn btn-danger btn-simple btn-xs">
+                                                      <i class="fa fa-times"></i></a>
               </div>
-              <h4 class="title"><i class="pe-7s-shield"></i> {{ campaign }}</h4>
+              <h4 class="title"><i class="pe-7s-shield"></i> {{ campaign_name }}</h4>
               {% endif %}
               <p class="category">Campaign Description
-                <a href="/editcampaign/{{ campaign }}" class="fa fa-pencil fa-fw te dxt-muted"></a>
+                <a href="/editcampaign/{{ campaign_name }}" class="fa fa-pencil fa-fw te dxt-muted"></a>
               </p>
             </div>
             <div class="content table-responsive table-full-width">
@@ -55,7 +57,7 @@
                   <th>Indicator</th>
                 </thead>
                 <tbody>
-                  {% for ind in campaignents[campaign] %}
+                  {% for ind in indicators %}
                   <tr>
                     {% if ind['indicator_type'] == "IPv4" or ind['indicator_type'] == "IPv6" or ind['indicator_type'] == "Domain" or ind['indicator_type'] == "Network" %}
                     <td><a href="/network/{{ ind['indicator'] }}/info">{{ ind['indicator'] }}</a></td>

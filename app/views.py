@@ -25,7 +25,7 @@ from libs import opendns
 from libs import passivetotal
 from libs import shodan
 from libs import virustotal
-from libs import whoisinfo
+#from libs import whoisinfo
 
 from app import app, db, lm
 from .forms import LoginForm, RegisterForm
@@ -111,14 +111,18 @@ def home():
         # Generate Campaign Statistics Graph
         for campaign in campaigns:
             c = Indicator.query.filter_by(campaign_id=campaign.get_id()).count()
-            if campaign.name == '':
-                dictcount["category"] = "Unknown"
-                tempx = (float(c) / float(counts)) * 100
-                dictcount["value"] = round(tempx, 2)
-            else:
-                dictcount["category"] = campaign.name
-                tempx = (float(c) / float(counts)) * 100
-                dictcount["value"] = round(tempx, 2)
+            try:
+                if campaign.name == '':
+                    dictcount["category"] = "Unknown"
+                    tempx = (float(c) / float(counts)) * 100
+                    dictcount["value"] = round(tempx, 2)
+                else:
+                    dictcount["category"] = campaign.name
+                    tempx = (float(c) / float(counts)) * 100
+                    dictcount["value"] = round(tempx, 2)
+            except ZeroDivisionError:
+                # Do not render the pi chart
+                pass
 
             dictlist.append(dictcount.copy())
 
@@ -183,7 +187,7 @@ def victims():
 def files():
     try:
         # Grab files/hashes
-        files = Indicator.query.filter(Indicator.indicator_type == ('Hash')).all()
+        files = Indicator.query.filter(Indicator.indicator_type == 'Hash').all()
         return render_template('indicatorlist.html', network=files, title='Files & Hashes', links='files')
     except Exception as e:
         return render_template('error.html', error=e)
@@ -193,17 +197,18 @@ def files():
 @login_required
 def campaigns():
     try:
-        rows = Indicator.query.all()
-
+        rows = Campaign.query.group_by(Campaign.name).all()
         # Grab campaigns and match indicators to campaigns
         campaignents = dict()
-        ind = {'indicator': '1.1.1.1', 'indicator_type': 'IPv4'}
-        for c in rows:
-            if c.campaign.name == '':
-                c.campaign.name = 'Unknown'
-            campaignents[c.campaign.name] = ind
+        for row in rows:
+            ind = Indicator.query.filter().all()
+            for i in ind:
+                a = i.campaign
+            if row.name == '':
+                row.name = 'Unknown'
+            campaignents[row.name] = ind
 
-        return render_template('campaigns.html', campaignents=campaignents)
+        return render_template('campaigns.html', campaigns=campaignents)
     except Exception as e:
         return render_template('error.html', error=e)
 
@@ -341,7 +346,7 @@ def newobject():
 
         if 'inputtype' in records:
             # Hack for dealing with disabled fields not being sent in request.form
-            # A hidden feild is used to send the indicator
+            # A hidden field is used to send the indicator
             if 'inputobject' not in records:
                 records['inputobject'] = records['indicator']
             # Makes sure if you submit an IPv4 indicator, it's an actual IP
@@ -370,22 +375,22 @@ def newobject():
                         else:
                             db.session.add(newindicator)
                             db.session.commit()
+                else:
+                    # Check to see if the app route was Update
+                    # preform an update instead of adding a new indicator
+                    rule = request.url_rule
+                    if 'update' in rule.rule:
+                        indicator.campaign.name = records['inputcampaign']
+                        indicator.indicator_type = records['inputtype']
+                        indicator.firstseen = records['inputfirstseen']
+                        indicator.lastseen = records['inputlastseen']
+                        indicator.diamondmodel = records['diamondmodel']
+                        indicator.confidence = records['confidence']
+                        indicator.notes = records['comments']
+                        indicator.tags = records['tags']
+                        db.session.commit()
                     else:
-                        # Check to see if the app route was Update
-                        # preform an update instead of adding a new indicator
-                        rule = request.url_rule
-                        if 'update' in rule.rule:
-                            indicator.campaign.name = records['inputcampaign']
-                            indicator.indicator_type = records['inputtype']
-                            indicator.firstseen = records['inputfirstseen']
-                            indicator.lastseen = records['inputlastseen']
-                            indicator.diamondmodel = records['diamondmodel']
-                            indicator.confidence = records['confidence']
-                            indicator.notes = records['comments']
-                            indicator.tags = records['tags']
-                            db.session.commit()
-                        else:
-                            errormessage = "Entry already exists in database."
+                        errormessage = "Entry already exists in database."
 
                 if errormessage:
                     return render_template('newobject.html', errormessage=errormessage,
@@ -517,66 +522,6 @@ def updatesettings():
         return render_template('settings.html', records=settings)
     except Exception as e:
         return render_template('error.html', error=e)
-
-
-'''
-@app.route('/update/indicator/', methods=['POST'])
-@login_required
-def updateobject():
-    try:
-        # Updates entry information
-        something = request.form
-        imd = ImmutableMultiDict(something)
-        records = helpers.convert(imd)
-        # taglist = records['tags'].split(",") - Unused
-        # indicator = Indicator.query.filter_by(object=records['object']).first() - Unused
-
-
-        # Campaign Name to Campign ID lookup
-        row = Campaign.query.filter_by(name=records['inputcampaign']).first()
-        if row:
-            campaign_id = row.get_id()
-        else:
-            camp = Campaign(name=records['inputcampaign'], adversary_id=1, notes='', tags=records['tags'])
-            #db.session.add(camp)
-            #db.session.commit()
-
-            row = Campaign.query.filter_by(name=records['inputcampaign']).first()
-            campaign_id = row.get_id()
-
-        try:
-            Indicator.query.filter_by(indicator=records['indicator']).update(records)
-        except Exception as e:
-            # SQLAlchemy does not outright support altering tables.
-            for k, v in records.iteritems():
-                if Indicator.query.group_by(k).first() is None:
-                    print 'ALTER Table'
-                    # db.engine.execute("ALTER TABLE indicators ADD COLUMN " + k + " TEXT DEFAULT ''")
-
-        db.session.commit()
-
-        # db.execute('ALTER  TABLE indicators ADD COLUMN')
-
-        # con = helpers.db_connection()
-        # with con:
-        #    cur = con.cursor()
-        #    cur.execute(
-        #        "ALTER TABLE indicators ADD COLUMN " + t + " TEXT DEFAULT ''")
-        #    cur.execute("UPDATE indicators SET " + t + "= '" + records[
-        #                t] + "' WHERE id = '" + records['id'] + "'")
-
-        if records['type'] == "IPv4" or records['type'] == "IPv6" or records['type'] == "Domain" or \
-                records['type'] == "Network":
-            return redirect(url_for('objectsummary', uid=str(records['object'])))
-        elif records['type'] == "Hash":
-            return redirect(url_for('filesobject', uid=str(records['object'])))
-        elif records['type'] == "Entity":
-            return redirect(url_for('victimobject', uid=str(records['object'])))
-        elif records['type'] == "Threat Actor":
-            return redirect(url_for('threatactorobject', uid=str(records['object'])))
-    except Exception as e:
-        return render_template('error.html', error=e)
-'''
 
 
 @app.route('/insert/newfield/', methods=['POST'])
@@ -783,27 +728,35 @@ def addrelationship():
 def deletenetworkobject(uid):
     try:
         row = Indicator.query.filter(Indicator.indicator == uid).first()
+        if not row:
+            Campaign.query.filter_by(name=uid).delete()
+            db.session.commit()
+            return redirect(url_for('campaigns'))
 
-        Indicator.query.filter_by(indicator=uid).delete()
-        db.session.commit()
+        else:
+            indicator_count = Indicator.query.distinct(Indicator.indicator).filter(Campaign.name == row.campaign.name).count()
+            if indicator_count <= 1:
+                Campaign.query.filter_by(name=row.campaign.name).delete()
+            Indicator.query.filter_by(indicator=uid).delete()
+            db.session.commit()
 
-        if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
-            current_indicators = Indicator.query.filter(
-                Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
-            title = 'Network Indicators'
-            links = 'network'
-        elif row.indicator_type == 'Threat Actor':
-            current_indicators = Indicator.query.filter_by(indicator_type='Threat Actor')
-            title = 'Threat Actors'
-            links = 'threatactors'
-        elif row.diamondmodel == 'Victim':
-            current_indicators = Indicator.query.filter_by(diamondmodel='Victim')
-            title = 'Victims'
-            links = 'victims'
-        elif row.indicator_type == 'Hash':
-            current_indicators = Indicator.query.filter_by(indicator_type='Hash')
-            title = 'Files & Hashes'
-            links = 'files'
+            if any(word in row.indicator_type for word in ['IPv4', 'IPv6', 'Domain', 'Network']):
+                current_indicators = Indicator.query.filter(
+                    Indicator.indicator_type.in_(('IPv4', 'IPv6', 'Domain', 'Network'))).all()
+                title = 'Network Indicators'
+                links = 'network'
+            elif row.indicator_type == 'Threat Actor':
+                current_indicators = Indicator.query.filter_by(indicator_type='Threat Actor')
+                title = 'Threat Actors'
+                links = 'threatactors'
+            elif row.diamondmodel == 'Victim':
+                current_indicators = Indicator.query.filter_by(diamondmodel='Victim')
+                title = 'Victims'
+                links = 'victims'
+            elif row.indicator_type == 'Hash':
+                current_indicators = Indicator.query.filter_by(indicator_type='Hash')
+                title = 'Files & Hashes'
+                links = 'files'
 
         return render_template('indicatorlist.html', network=current_indicators, title=title, links=links)
     except Exception as e:
